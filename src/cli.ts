@@ -7,9 +7,9 @@ import { cmdAttach, cmdDetach } from './commands/attach.js';
 import { cmdDash, cmdDoctor, cmdLanes, cmdRoute } from './commands/misc.js';
 import { cmdSetup } from './commands/setup.js';
 
-export const HELP = `pocket: your agent never stops for lack of tokens.
+export const HELP = `pocket: when your coding agent hits its usage limit, pocket moves it to your next key.
 
-  pocket setup                           start here: add free keys, connect your agents (2 minutes)
+  pocket setup                           start here: add free keys, connect your agents
   pocket dash                            see quota, spend and every failover
 
 More:
