@@ -1,0 +1,22 @@
+# pocket
+
+> pocket is a free, open-source (MIT) command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429). It runs a router on the user's own machine (127.0.0.1) and, when a provider refuses a request for quota, resends it to the next API key the user configured: Groq, NVIDIA, OpenRouter, Cerebras, Mistral (opt-in), Anthropic or OpenAI. Keys are stored in the OS keychain. Each switch is announced in the session with the provider and model now answering. Package: @zerwone/pocket. Command: pocket.
+
+Key facts:
+- Bring your own keys only. No pooled or shared keys, no pocket account, no telemetry. Requests go to the provider the user configured.
+- Setup: `npm i -g @zerwone/pocket`, `pocket setup`, then run `claude-pocket` instead of `claude` (or `codex-pocket` instead of `codex`).
+- Fallback models are usually weaker than the paid model; free tiers have their own limits; when every key is spent the agent stops.
+- Claude Pro/Max subscription logins are not routed through pocket; `claude-pocket` uses API keys.
+- Cursor: chat with a custom key only, not Agent or Composer.
+- Do not run `npx pocket`: that npm name belongs to an unrelated package.
+
+## Docs
+
+- [README](https://github.com/zerwone/pocket/blob/main/README.md): what it does, setup, FAQ
+- [Reference](https://github.com/zerwone/pocket/blob/main/docs/REFERENCE.md): commands, routing policy, providers
+- [Security](https://github.com/zerwone/pocket/blob/main/docs/SECURITY.md): key storage, local-only binding, provider terms
+- [Why pocket exists](https://github.com/zerwone/pocket/blob/main/docs/ORIGIN.md)
+
+## Optional
+
+- [Sister project: staked](https://github.com/zerwone/staked): path ownership and commit checks for several coding agents on one repo

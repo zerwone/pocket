@@ -1,0 +1,63 @@
+{
+  "name": "@zerwone/pocket",
+  "version": "0.1.0",
+  "description": "When your coding agent hits its usage limit, move it to your next API key. Local router, your own keys in the OS keychain, every switch named.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "pocket": "dist/main.js"
+  },
+  "files": [
+    "dist",
+    "providers.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@napi-rs/keyring": "^1.2.0",
+    "smol-toml": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "usage-limit",
+    "rate-limit",
+    "fallback",
+    "byok",
+    "llm-router",
+    "groq",
+    "openrouter",
+    "cerebras",
+    "nvidia-nim",
+    "keychain",
+    "coding-agents",
+    "developer-tools",
+    "cli"
+  ],
+  "homepage": "https://github.com/zerwone/pocket#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zerwone/pocket.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zerwone/pocket/issues"
+  },
+  "author": "Mohamad Aljadaan (ZerwOne)"
+}

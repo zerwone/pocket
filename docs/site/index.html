@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pocket: keep Claude Code and Codex working when they hit a usage limit</title>
+<meta name="description" content="Free, open-source CLI: when Claude Code or Codex hits a usage limit or 429, pocket moves it to your next API key. Runs locally, keys in your OS keychain.">
+<link rel="canonical" href="https://zerwone.github.io/pocket/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151515" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="pocket">
+<meta property="og:title" content="pocket: keep your coding agent working when it hits a usage limit">
+<meta property="og:description" content="When Claude Code or Codex hits a usage limit, pocket moves it to your next API key. Your own keys, local router, every switch named.">
+<meta property="og:url" content="https://zerwone.github.io/pocket/">
+<meta property="og:image" content="https://zerwone.github.io/pocket/social.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="pocket logo, headline and example terminal output">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://zerwone.github.io/pocket/#app",
+      "name": "pocket",
+      "alternateName": "@zerwone/pocket",
+      "description": "Free, open-source command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429), by resending requests to the user's next configured API key. Runs locally; keys are stored in the OS keychain.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Windows, macOS, Linux",
+      "license": "https://opensource.org/licenses/MIT",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "url": "https://zerwone.github.io/pocket/",
+      "downloadUrl": "https://www.npmjs.com/package/@zerwone/pocket",
+      "sameAs": ["https://github.com/zerwone/pocket"],
+      "author": { "@type": "Person", "name": "Mohamad Aljadaan", "affiliation": { "@type": "Organization", "name": "ZerwOne" } }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://zerwone.github.io/pocket/#faq",
+      "mainEntity": [
+        { "@type": "Question", "name": "What can I do when Claude Code says \"usage limit reached\"?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Four options: wait for the limit to reset; switch Claude Code to a paid Anthropic API key; route Claude Code through one gateway such as OpenRouter; or run it through pocket, which tries your own keys from several providers in order and switches automatically, mid-session, without restarting." } },
+        { "@type": "Question", "name": "Does pocket work with a Claude Pro or Max subscription?",
+          "acceptedAnswer": { "@type": "Answer", "text": "claude-pocket runs Claude Code on API keys through pocket, not on your subscription login. Keep using claude on your plan. When the plan hits its limit, start claude-pocket and keep working on your keys." } },
+        { "@type": "Question", "name": "How is pocket different from OpenRouter, LiteLLM or claude-code-fallback?",
+          "acceptedAnswer": { "@type": "Answer", "text": "OpenRouter is one provider and gateway; pocket can use an OpenRouter key as one step in its order. LiteLLM is a general proxy you configure yourself. claude-code-fallback moves you from a Claude subscription to Anthropic API billing only. pocket is narrower: one pocket setup, keys in your OS keychain, a quota meter per key, launchers for Claude Code and Codex, and a notice in the session each time it switches." } },
+        { "@type": "Question", "name": "Which model answers after a switch?",
+          "acceptedAnswer": { "@type": "Answer", "text": "The first one in your order with quota left. By default that is Groq (gpt-oss-120b, qwen3.8-27b or gpt-oss-20b, matched to what the agent asked for), then NVIDIA, OpenRouter and Cerebras. The reply names the provider and model." } },
+        { "@type": "Question", "name": "Is it free? Is it allowed?",
+          "acceptedAnswer": { "@type": "Answer", "text": "pocket is MIT-licensed. The free allowance comes from each provider's own free tier on your own account. pocket never pools or shares keys. Read each provider's terms; Mistral's free plan may train on your requests, so it is off by default." } },
+        { "@type": "Question", "name": "Does my code leave my machine?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Your requests go to the provider you configured, the same as using that provider directly. pocket itself has no server, no account and no telemetry." } },
+        { "@type": "Question", "name": "Does it work on Windows?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, keys go to Windows Credential Manager and the launchers are .cmd files. The test suite has so far run on Linux; Windows reports are welcome." } }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="pocket home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8v9a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V8"/><rect x="12" y="2" width="4" height="10" fill="currentColor" stroke="none"/></svg>
+      pocket
+    </a>
+    <nav aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="https://github.com/zerwone/pocket">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <h1>When your coding agent hits its usage limit, pocket moves it to your next key.</h1>
+    <p class="lede">Your own keys, in your OS keychain. Runs on your machine. Every switch names the model now answering.</p>
+    <div class="copyrow">
+      <pre class="term" id="install"><span class="p">$ </span>npm i -g @zerwone/pocket
+<span class="p">$ </span>pocket setup
+<span class="p">$ </span>claude-pocket</pre>
+      <button class="copy" type="button" data-copy="install">Copy</button>
+    </div>
+    <p class="def"><strong>pocket is a free, open-source command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429).</strong> It runs a small router on your own machine. When your current provider refuses a request for quota, it resends it to the next API key you configured (Groq, NVIDIA, OpenRouter, Cerebras, or your Anthropic or OpenAI key) and tells you which model is now answering.</p>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <figure style="margin:0 0 20px"><img src="demo.gif" alt="Demo: the paid provider hits a simulated limit, pocket switches to Groq and names the model; the switch appears in the log" width="1280" height="720" loading="lazy" style="width:100%;height:auto;border-radius:8px;display:block"><figcaption class="small" style="margin-top:8px">Stand-in providers; the limit is simulated. The switch notice and log lines are pocket's real output.</figcaption></figure>
+      <p><code>pocket setup</code> walks you through it, a couple of minutes if your keys are ready:</p>
+      <ol>
+        <li>finds Claude Code and Codex on your machine</li>
+        <li>walks you through free keys from Groq, NVIDIA, OpenRouter and Cerebras, with the signup link for each (skip any you don't want)</li>
+        <li>optionally adds your paid key, used first up to $10 a day</li>
+        <li>connects your agents</li>
+      </ol>
+      <p>Then use <code>claude-pocket</code> instead of <code>claude</code> (or <code>codex-pocket</code> instead of <code>codex</code>). Until a limit hits, nothing changes. When it does, the next reply starts with one line:</p>
+      <pre class="term"><span class="hl">[pocket] running on groq/qwen/qwen3.8-27b, anthropic quota exhausted (429)</span></pre>
+      <p style="margin-top:14px">and the session carries on, as long as the fallback key has quota left. The fallback model may handle the task differently or worse, so review what it does. Free keys have limits too; when all of them are spent, the agent stops as it would without pocket.</p>
+      <p>Open <code>pocket dash</code> to see how much free quota is left on each key, what you've spent today, and every switch.</p>
+      <img src="dashboard.png" alt="pocket dashboard after a switch: anthropic in 429 cooldown, claude-code running on groq, one failover logged" width="1440" height="900" loading="lazy" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block;margin:0 0 14px">
+      <p class="note">Install <code>@zerwone/pocket</code>. Do not run <code>npx pocket</code>: that name on npm belongs to someone else.</p>
+    </div>
+  </section>
+
+  <section id="free">
+    <div class="wrap">
+      <h2>How much free you get</h2>
+      <div class="table">
+        <table>
+          <thead><tr><th>Provider</th><th>Free per key</th><th>Get a key</th></tr></thead>
+          <tbody>
+            <tr><td>Groq</td><td>1,000 requests/day</td><td><a href="https://console.groq.com/keys">console.groq.com/keys</a></td></tr>
+            <tr><td>NVIDIA</td><td>~40 requests/min</td><td><a href="https://build.nvidia.com">build.nvidia.com</a></td></tr>
+            <tr><td>OpenRouter</td><td>50 requests/day (1,000 after a one-time $10 top-up)</td><td><a href="https://openrouter.ai/settings/keys">openrouter.ai/settings/keys</a></td></tr>
+            <tr><td>Cerebras</td><td>1M tokens/day, 5 requests/min</td><td><a href="https://cloud.cerebras.ai">cloud.cerebras.ai</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small" style="margin-top:12px">Checked against each provider's docs on 2026-11-08. Mistral (1B tokens/month) is supported but off by default, because its free plan may use your requests for training.</p>
+    </div>
+  </section>
+
+  <section id="keys">
+    <div class="wrap">
+      <h2>How it handles your keys</h2>
+      <ul>
+        <li><strong>Your keys only.</strong> Each provider only ever sees the key you gave it for that provider. Nothing is pooled or shared. Your requests go to the provider you configured.</li>
+        <li><strong>No pocket account, no telemetry.</strong> You still need an account with each provider.</li>
+        <li><strong>OS keychain, not pocket's config files.</strong> Windows Credential Manager, macOS Keychain, or Secret Service on Linux.</li>
+        <li><strong>Local only.</strong> Listens on <code>127.0.0.1</code> and refuses anything without its local token.</li>
+      </ul>
+      <p>Works with <strong>Claude Code</strong> (CLI and VS Code) and <strong>Codex CLI</strong>. Cursor partly: chat with your own key only, not Agent or Composer. Windows, macOS, Linux.</p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>FAQ</h2>
+      <details><summary>What can I do when Claude Code says "usage limit reached"?</summary><p>Four options: wait for the limit to reset; switch Claude Code to a paid Anthropic API key; route Claude Code through one gateway such as OpenRouter; or run it through pocket, which tries your own keys from several providers in order and switches automatically, mid-session, without restarting.</p></details>
+      <details><summary>Does pocket work with a Claude Pro or Max subscription?</summary><p>claude-pocket runs Claude Code on API keys through pocket, not on your subscription login. Keep using claude on your plan. When the plan hits its limit, start claude-pocket and keep working on your keys.</p></details>
+      <details><summary>How is pocket different from OpenRouter, LiteLLM or claude-code-fallback?</summary><p>OpenRouter is one provider and gateway; pocket can use an OpenRouter key as one step in its order. LiteLLM is a general proxy you configure yourself. claude-code-fallback moves you from a Claude subscription to Anthropic API billing only. pocket is narrower: one pocket setup, keys in your OS keychain, a quota meter per key, launchers for Claude Code and Codex, and a notice in the session each time it switches.</p></details>
+      <details><summary>Which model answers after a switch?</summary><p>The first one in your order with quota left. By default that is Groq (gpt-oss-120b, qwen3.8-27b or gpt-oss-20b, matched to what the agent asked for), then NVIDIA, OpenRouter and Cerebras. The reply names the provider and model.</p></details>
+      <details><summary>Is it free? Is it allowed?</summary><p>pocket is MIT-licensed. The free allowance comes from each provider's own free tier on your own account. pocket never pools or shares keys. Read each provider's terms; Mistral's free plan may train on your requests, so it is off by default.</p></details>
+      <details><summary>Does my code leave my machine?</summary><p>Your requests go to the provider you configured, the same as using that provider directly. pocket itself has no server, no account and no telemetry.</p></details>
+      <details><summary>Does it work on Windows?</summary><p>Yes, keys go to Windows Credential Manager and the launchers are .cmd files. The test suite has so far run on Linux; Windows reports are welcome.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Built by Mohamad Aljadaan at <strong>ZerwOne</strong> · MIT</span>
+    <span><a href="https://github.com/zerwone/pocket">GitHub</a> · <a href="https://www.npmjs.com/package/@zerwone/pocket">npm</a> · Sister project: <a href="https://zerwone.github.io/staked/">staked</a></span>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var lines = document.getElementById(b.dataset.copy).innerText.split('\n').map(function (l) { return l.replace(/^\$ /, ''); }).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(lines) : Promise.reject()).then(function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500); }, function () {});
+  });
+});
+</script>
+</body>
+</html>

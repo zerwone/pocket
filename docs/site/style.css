@@ -1,0 +1,106 @@
+/* shared by the pocket and staked sites. tokens from the brand strategy. */
+:root {
+  --bg: #fafaf8;
+  --fg: #181818;
+  --muted: #606060;
+  --line: #e4e4e0;
+  --panel: #f1f1ed;
+  --accent: #2457d6;
+  --accent-tint: #edf2ff;
+  --term-bg: #151515;
+  --term-fg: #f4f4f2;
+  --term-muted: #9a9a9a;
+  --term-accent: #8baeff;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151515;
+    --fg: #f4f4f2;
+    --muted: #b5b5b5;
+    --line: #2c2c2c;
+    --panel: #1e1e1e;
+    --accent: #8baeff;
+    --accent-tint: #1d2640;
+    --term-bg: #0d0d0d;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 16px/1.6 var(--sans);
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+header.top { border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 18px; color: var(--fg); text-decoration: none; }
+.brand svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+header.top nav { display: flex; gap: 20px; font-size: 14px; }
+header.top nav a { color: var(--muted); text-decoration: none; }
+header.top nav a:hover { color: var(--fg); }
+
+.hero { padding-top: 64px; padding-bottom: 40px; }
+.hero h1 { font-weight: 500; font-size: clamp(30px, 6vw, 44px); line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 16px; }
+.hero p.lede { font-size: 18px; color: var(--muted); margin: 0 0 28px; max-width: 620px; }
+.hero p.def { font-size: 15px; margin: 24px 0 0; max-width: 640px; }
+
+.term {
+  background: var(--term-bg);
+  color: var(--term-fg);
+  font: 400 14px/1.6 var(--mono);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 0;
+}
+.term .p { color: var(--term-muted); user-select: none; }
+.term .c { color: var(--term-muted); }
+.term .hl { color: var(--term-accent); }
+.copyrow { position: relative; }
+.copyrow .term { padding-right: 76px; }
+.copy {
+  position: absolute; top: 10px; right: 10px;
+  font: 500 12px/1 var(--sans); color: var(--term-fg);
+  background: transparent; border: 1px solid #3a3a3a; border-radius: 6px; padding: 6px 9px; cursor: pointer;
+}
+.copy:hover { border-color: var(--term-accent); }
+
+section { padding: 40px 0; border-top: 1px solid var(--line); }
+section h2 { font-weight: 500; font-size: 24px; margin: 0 0 16px; }
+section p { margin: 0 0 14px; }
+ol, ul { padding-left: 22px; margin: 0 0 14px; }
+li { margin: 4px 0; }
+code { font: 400 0.92em var(--mono); background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+.term code { background: none; padding: 0; }
+.note { border-left: 3px solid var(--accent); background: var(--accent-tint); padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 15px; }
+
+.table { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+td:first-child { white-space: nowrap; }
+.small { font-size: 14px; color: var(--muted); }
+
+details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+details:first-of-type { border-top: 1px solid var(--line); }
+summary { cursor: pointer; font-weight: 500; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--muted); font-weight: 400; }
+details[open] summary::after { content: "−"; }
+details p { margin: 10px 0 0; color: var(--fg); }
+
+footer { border-top: 1px solid var(--line); padding: 28px 0 48px; font-size: 14px; color: var(--muted); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
+
+@media (max-width: 560px) {
+  header.top nav a.hide-sm { display: none; }
+  .hero { padding-top: 44px; padding-bottom: 28px; }
+  td:first-child { white-space: normal; }
+}

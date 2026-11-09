@@ -1,0 +1,144 @@
+{
+  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
+  "providers": {
+    "groq": {
+      "base_url": "https://api.groq.com/openai/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {
+        "rpm": 30,
+        "rpd": 1000,
+        "tpd": 200000
+      },
+      "verified_on": "2026-11-08",
+      "source": "https://console.groq.com/docs/rate-limits (table is labelled Developer-plan base limits; your console may show lower)",
+      "tiers": {
+        "strong": "openai/gpt-oss-120b",
+        "mid": "qwen/qwen3.8-27b",
+        "fast": "openai/gpt-oss-20b"
+      }
+    },
+    "cerebras": {
+      "base_url": "https://api.cerebras.ai/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {
+        "rpm": 5,
+        "tpd": 1000000
+      },
+      "verified_on": "2026-11-08",
+      "source": "https://inference-docs.cerebras.ai/support/rate-limits (free trial: 5 rpm, 1M tokens/day; 65k context)",
+      "tiers": {
+        "strong": "gpt-oss-120b",
+        "mid": "qwen-3.8-27b",
+        "fast": "qwen-3.8-27b"
+      }
+    },
+    "nvidia": {
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {
+        "rpm": 40
+      },
+      "verified_on": "2026-11-08",
+      "source": "community-verified ~40 rpm, account-wide across all models on the key; NVIDIA publishes no table and no daily cap. Model ids NOT verified.",
+      "tiers": {
+        "strong": "meta/llama-3.3-70b-instruct",
+        "mid": "meta/llama-3.3-70b-instruct",
+        "fast": "meta/llama-3.1-8b-instruct"
+      }
+    },
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {
+        "rpm": 20,
+        "rpd": 50
+      },
+      "verified_on": "2026-11-08",
+      "source": "https://openrouter.ai/docs/api/reference/limits (50 rpd; 1,000 rpd after $10 lifetime credit purchase: raise rpd in your override)",
+      "tiers": {
+        "strong": "openai/gpt-oss-120b:free",
+        "mid": "meta-llama/llama-3.3-70b-instruct:free",
+        "fast": "meta-llama/llama-3.3-70b-instruct:free"
+      }
+    },
+    "mistral": {
+      "base_url": "https://api.mistral.ai/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {
+        "rpm": 60,
+        "tpmonth": 1000000000
+      },
+      "verified_on": "2026-11-08",
+      "source": "https://help.mistral.ai/en/articles/225174 (1 req/s, 500K tpm, 1B tokens/month; phone verification)",
+      "tiers": {
+        "strong": "mistral-large-latest",
+        "mid": "mistral-medium-latest",
+        "fast": "mistral-small-latest"
+      },
+      "notice": "Requests on Mistral's free Experiment plan may be used to train Mistral's models. Not in the default order; add it to pocket.yml yourself if that is acceptable."
+    },
+    "anthropic": {
+      "base_url": "https://api.anthropic.com",
+      "format": "anthropic",
+      "paid": true,
+      "limits": {},
+      "verified_on": null,
+      "source": "paid; capped by daily_cap_usd in pocket.yml",
+      "passthrough": "claude-",
+      "price_per_mtok": {
+        "strong": {
+          "input": 15,
+          "output": 75
+        },
+        "mid": {
+          "input": 3,
+          "output": 15
+        },
+        "fast": {
+          "input": 1,
+          "output": 5
+        }
+      },
+      "tiers": {
+        "strong": "claude-opus-5-5",
+        "mid": "claude-sonnet-5-5",
+        "fast": "claude-haiku-5-5"
+      },
+      "images": true
+    },
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "format": "openai",
+      "paid": true,
+      "limits": {},
+      "verified_on": null,
+      "source": "paid; capped by daily_cap_usd in pocket.yml",
+      "passthrough": "gpt-",
+      "price_per_mtok": {
+        "strong": {
+          "input": 10,
+          "output": 40
+        },
+        "mid": {
+          "input": 2,
+          "output": 8
+        },
+        "fast": {
+          "input": 0.4,
+          "output": 1.6
+        }
+      },
+      "tiers": {
+        "strong": "gpt-4.1",
+        "mid": "gpt-4.1",
+        "fast": "gpt-4.1-mini"
+      },
+      "images": true
+    }
+  }
+}
