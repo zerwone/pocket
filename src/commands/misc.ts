@@ -84,6 +84,8 @@ export async function doctorChecks(ctx: Ctx, args: Args, ksOverride?: Keystore):
   if (att.codex) {
     const cur = readText(att.codex.file) ?? '';
     if (!cur.includes('[model_providers.pocket]')) out.push({ level: 'warn', check: 'attached', message: `codex config no longer has the pocket provider (${att.codex.file})` });
+    else if (/wire_api\s*=\s*"chat"/.test(cur) || cur.includes('model_provider = "pocket" # pocket'))
+      out.push({ level: 'error', check: 'attached', message: `codex config was attached by pocket 0.1.1, which Codex no longer accepts: run \`pocket detach codex\` then \`pocket attach codex\`` });
   }
   return out;
 }

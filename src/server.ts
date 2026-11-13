@@ -141,6 +141,9 @@ export function createServer(deps: ServerDeps): http.Server {
       if (req.method === 'POST' && pathname === '/openai/v1/chat/completions') {
         return await route(deps, { format: 'openai', body: await readBody(req), agent, headers: req.headers }, res);
       }
+      if (req.method === 'POST' && pathname === '/openai/v1/responses') {
+        return await route(deps, { format: 'responses', body: await readBody(req), agent, headers: req.headers }, res);
+      }
       if (req.method === 'GET' && (pathname === '/openai/v1/models' || pathname === '/anthropic/v1/models')) {
         const ids = ['claude-opus-4-1', 'claude-sonnet-4-5', 'claude-haiku-4-5', 'gpt-4.1', 'gpt-4.1-mini'];
         if (pathname.startsWith('/openai')) return sendJson(res, 200, { object: 'list', data: ids.map((id) => ({ id, object: 'model', owned_by: 'pocket' })) });

@@ -1,6 +1,6 @@
 {
   "name": "@zerwone/pocket",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "When your coding agent hits its usage limit, move it to your next API key. Local router, your own keys in the OS keychain, every switch named.",
   "license": "MIT",
   "type": "module",

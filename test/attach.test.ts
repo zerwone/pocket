@@ -44,20 +44,21 @@ describe('attach codex / detach codex', () => {
       expect(r.code, r.err).toBe(0);
       const attached = fs.readFileSync(file, 'utf8');
       const parsed: any = parseToml(attached);
-      expect(parsed.model_provider).toBe('pocket');
-      expect(parsed.model_providers.pocket).toMatchObject({ name: 'pocket', base_url: 'http://127.0.0.1:3460/openai/v1', env_key: 'POCKET_TOKEN', wire_api: 'chat', http_headers: { 'x-pocket-agent': 'codex' } });
-      // every other key is untouched
+      expect(parsed.model_providers.pocket).toMatchObject({ name: 'pocket', base_url: 'http://127.0.0.1:3460/openai/v1', env_key: 'POCKET_TOKEN', wire_api: 'responses', http_headers: { 'x-pocket-agent': 'codex' } });
+      expect(parsed.profiles.pocket).toEqual({ model_provider: 'pocket' });
+      // plain `codex` is untouched: the top-level model_provider and every other key stay as they were
       const orig: any = parseToml(content);
-      delete orig.model_provider;
       const now: any = structuredClone(parsed);
-      delete now.model_provider;
-      delete now.model_providers.pocket;
-      if (!Object.keys(now.model_providers).length) delete now.model_providers;
+      for (const t of ['model_providers', 'profiles']) {
+        delete now[t].pocket;
+        if (!Object.keys(now[t]).length) delete now[t];
+      }
       expect(now).toEqual(orig);
       if (content.includes('\r\n')) expect(attached.replace(/\r\n/g, '')).not.toContain('\n');
       // the launcher passes the local token via POCKET_TOKEN
       const launcher = fs.readFileSync(path.join(home, 'bin', process.platform === 'win32' ? 'codex-pocket.cmd' : 'codex-pocket'), 'utf8');
       expect(launcher).toContain('POCKET_TOKEN');
+      expect(launcher).toContain('codex --profile pocket');
       r = await pocket(['detach', 'codex'], env);
       expect(r.code, r.err).toBe(0);
       expect(fs.readFileSync(file).equals(before)).toBe(true);
@@ -97,6 +98,16 @@ describe('attach codex / detach codex', () => {
   it('textual undo with no original model_provider line drops ours', () => {
     const { text } = codexAttachText('model = "o3"\n', 'u', 'codex');
     expect(codexDetachText(text, null)).toBe('model = "o3"\n');
+  });
+
+  it('refuses an existing [profiles.pocket]', () => {
+    expect(() => codexAttachText('[profiles.pocket]\nmodel = "x"\n', 'u', 'codex')).toThrow(/already defines \[profiles.pocket\]/);
+  });
+
+  it('detach still cleans up a config attached by pocket 0.1.1 (top-level model_provider + wire_api chat)', () => {
+    const old = 'model = "gpt-5-codex"\nmodel_provider = "pocket" # pocket\n\n# >>> pocket: added by `pocket attach codex`; remove with `pocket detach codex`\n[model_providers.pocket]\nname = "pocket"\nwire_api = "chat"\n# <<< pocket\n';
+    expect(codexDetachText(old, null)).toBe('model = "gpt-5-codex"\n');
+    expect(codexDetachText(old, 'model_provider = "openai"')).toBe('model = "gpt-5-codex"\nmodel_provider = "openai"\n');
   });
 });
 

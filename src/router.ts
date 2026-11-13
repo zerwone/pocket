@@ -3,6 +3,7 @@ import { costUsd, retryAfterMs } from './meter.js';
 import { effective, Policy } from './policy.js';
 import { modelFor, Provider, Tier } from './providers.js';
 import { SseParser, sse } from './sse.js';
+import { AnthropicToResponsesStream, anthropicToResponsesResponse, toolMap, responsesToAnthropicRequest } from './responses.js';
 import { State } from './state.js';
 import {
   AEvent,
@@ -20,7 +21,7 @@ import {
   usageFromEvents,
 } from './translate.js';
 
-export type ClientFormat = 'anthropic' | 'openai';
+export type ClientFormat = 'anthropic' | 'openai' | 'responses';
 
 export interface RouterDeps {
   providers: () => Record<string, Provider>;
@@ -145,7 +146,7 @@ async function attempt(
       const c = amsg.content ?? [];
       amsg = { ...amsg, content: c[0]?.type === 'text' ? [{ ...c[0], text: banner + c[0].text }, ...c.slice(1)] : [{ type: 'text', text: banner }, ...c] };
     }
-    const out = inb.format === 'anthropic' ? amsg : anthropicToOpenAIResponse(amsg, model);
+    const out = inb.format === 'anthropic' ? amsg : inb.format === 'responses' ? anthropicToResponsesResponse(amsg, model, toolMap(inb.body)) : anthropicToOpenAIResponse(amsg, model);
     sendJson(res, 200, out, outHeaders);
     return { input: amsg.usage?.input_tokens ?? 0, output: amsg.usage?.output_tokens ?? 0 };
   }
@@ -156,6 +157,7 @@ async function attempt(
   const parser = new SseParser();
   const conv = p.format === 'openai' ? new OpenAIToAnthropicStream(model) : null;
   const toClient = inb.format === 'openai' ? new AnthropicToOpenAIStream(model) : null;
+  const toResponses = inb.format === 'responses' ? new AnthropicToResponsesStream(model, toolMap(inb.body)) : null;
   const pending: AEvent[] = [];
   const all: AEvent[] = [];
   let committed = false;
@@ -164,6 +166,7 @@ async function attempt(
 
   const write = (e: AEvent) => {
     if (inb.format === 'anthropic') res.write(sse(e.type, e));
+    else if (toResponses) for (const [name, body] of toResponses.push(e)) res.write(sse(name, body));
     else for (const c of toClient!.push(e)) res.write(c === '[DONE]' ? 'data: [DONE]\n\n' : sse(undefined, c));
   };
   const emit = (e: AEvent) => {
@@ -251,6 +254,7 @@ async function attempt(
     // after the first token we finish on the same provider: close the stream with an error event
     deps.log(`stream error after first token on ${p.id}: ${e.message}`);
     if (inb.format === 'anthropic') res.write(sse('error', { type: 'error', error: { type: 'api_error', message: `[pocket] ${p.id} stream failed: ${e.message}` } }));
+    else if (toResponses) for (const [name, body] of toResponses.fail(`[pocket] ${p.id} stream failed: ${e.message}`)) res.write(sse(name, body));
     else res.write('data: [DONE]\n\n');
     res.end();
     return usageFromEvents(all);
@@ -264,6 +268,7 @@ async function attempt(
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', ...outHeaders });
     for (const x of pending) write(x);
   }
+  if (toResponses) for (const [name, body] of toResponses.finish()) res.write(sse(name, body));
   res.end();
   return usageFromEvents(all);
 }
@@ -272,7 +277,7 @@ export async function route(deps: RouterDeps, inb: Inbound, res: ServerResponse)
   const fmt = inb.format;
   let areq: any;
   try {
-    areq = fmt === 'anthropic' ? inb.body : openAIToAnthropicRequest(inb.body);
+    areq = fmt === 'anthropic' ? inb.body : fmt === 'responses' ? responsesToAnthropicRequest(inb.body) : openAIToAnthropicRequest(inb.body);
   } catch (e: any) {
     const status = e instanceof TranslateError ? e.status : 400;
     return sendJson(res, status, errorBody(fmt, status, e.message, 'invalid_request_error'));

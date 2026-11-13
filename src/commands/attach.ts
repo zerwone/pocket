@@ -79,15 +79,18 @@ function eolOf(text: string) {
 
 function stripOurs(o: any) {
   const c = structuredClone(o ?? {});
-  delete c.model_provider;
-  if (c.model_providers) {
-    delete c.model_providers.pocket;
-    if (!Object.keys(c.model_providers).length) delete c.model_providers;
+  for (const t of ['model_providers', 'profiles']) {
+    if (c[t]) {
+      delete c[t].pocket;
+      if (!Object.keys(c[t]).length) delete c[t];
+    }
   }
   return c;
 }
 
-/** Pure: the attached config text, plus the original top-level model_provider line (if any). */
+/** Pure: the attached config text. pocket only adds its own provider and a `pocket` profile, so plain
+ *  `codex` keeps working exactly as before; `codex-pocket` runs `codex --profile pocket`.
+ *  origLine is kept in the return shape for detach of configs attached by pocket <= 0.1.1. */
 export function codexAttachText(orig: string | null, baseUrl: string, agent: string): { text: string; origLine: string | null } {
   const src = orig ?? '';
   let before: any = {};
@@ -97,20 +100,9 @@ export function codexAttachText(orig: string | null, baseUrl: string, agent: str
     throw new PocketError(`~/.codex/config.toml does not parse as TOML (${e.message}); not touching it`);
   }
   if (before.model_providers?.pocket) throw new PocketError('config.toml already defines [model_providers.pocket]; remove it or run `pocket detach codex` first');
+  if (before.profiles?.pocket) throw new PocketError('config.toml already defines [profiles.pocket]; remove it or run `pocket detach codex` first');
   const eol = eolOf(src);
-  const lines = src.length ? src.split(/\r?\n/) : [];
-  const firstTable = lines.findIndex((l) => /^\s*\[/.test(l));
-  const topEnd = firstTable < 0 ? lines.length : firstTable;
-  let origLine: string | null = null;
-  const ours = `model_provider = "pocket" # pocket`;
-  const mpIdx = lines.slice(0, topEnd).findIndex((l) => MP_LINE_RE.test(l));
-  if (mpIdx >= 0) {
-    origLine = lines[mpIdx];
-    lines[mpIdx] = ours;
-  } else {
-    lines.splice(0, 0, ours);
-  }
-  let body = lines.join(eol);
+  let body = src;
   if (body.length && !body.endsWith(eol)) body += eol;
   const block = [
     CODEX_BEGIN,
@@ -118,8 +110,11 @@ export function codexAttachText(orig: string | null, baseUrl: string, agent: str
     'name = "pocket"',
     `base_url = "${baseUrl}"`,
     'env_key = "POCKET_TOKEN"',
-    'wire_api = "chat"',
+    'wire_api = "responses"',
     `http_headers = { "x-pocket-agent" = "${agent}" }`,
+    '',
+    '[profiles.pocket]',
+    'model_provider = "pocket"',
     CODEX_END,
   ].join(eol);
   const text = body + (body.trim().length ? eol : '') + block + eol;
@@ -130,8 +125,8 @@ export function codexAttachText(orig: string | null, baseUrl: string, agent: str
     throw new PocketError(`adding the pocket provider would break config.toml (${e.message}); not touching it`);
   }
   if (JSON.stringify(stripOurs(after)) !== JSON.stringify(stripOurs(before))) throw new PocketError('internal: attach would change other keys in config.toml; refusing');
-  if (after.model_provider !== 'pocket' || after.model_providers?.pocket?.base_url !== baseUrl) throw new PocketError('internal: attach did not produce the pocket provider; refusing');
-  return { text, origLine };
+  if (after.model_providers?.pocket?.base_url !== baseUrl || after.profiles?.pocket?.model_provider !== 'pocket') throw new PocketError('internal: attach did not produce the pocket provider; refusing');
+  return { text, origLine: null };
 }
 
 /** Pure: undo our edit when the file changed after attach (so the backup cannot be restored as is). */
@@ -215,10 +210,10 @@ export async function cmdAttach(ctx: Ctx, args: Args): Promise<number> {
     if (origBuf) fs.writeFileSync(backup, origBuf, { mode: fs.statSync(file).mode & 0o777 });
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, text);
-    const launcher = writeLauncher(binDir(ctx, args, p), 'codex-pocket', { POCKET_TOKEN: token }, [], 'codex', prt);
+    const launcher = writeLauncher(binDir(ctx, args, p), 'codex-pocket', { POCKET_TOKEN: token }, [], 'codex --profile pocket', prt);
     att.codex = { agent, file, existed: !!origBuf, backup, after: text, origModelProviderLine: origLine, launcher };
     saveAttachments(p, att);
-    ctx.out(`added [model_providers.pocket] and model_provider = "pocket" to ${file}${origBuf ? ` (backup: ${backup})` : ''}`);
+    ctx.out(`added [model_providers.pocket] and [profiles.pocket] to ${file}${origBuf ? ` (backup: ${backup})` : ''}; plain \`codex\` is unchanged`);
     ctx.out(`Codex reads the local token from POCKET_TOKEN. Run: ${launcher}   (or export POCKET_TOKEN yourself)`);
     return 0;
   }

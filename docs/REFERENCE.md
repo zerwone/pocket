@@ -51,7 +51,7 @@ Streaming works end to end. A failure **before** the first token fails over; onc
 | `pocket keys add <provider>` / `keys list` / `keys rm` | Prompt with echo off (or read stdin), store in the OS keychain, verify with one cheap request |
 | `pocket route ["prompt"]` | Send one test request through the daemon and print which provider answered |
 | `pocket attach claude [--vscode]` | Write the `claude-pocket` launcher (starts the daemon if needed, sets `ANTHROPIC_BASE_URL`, a local token, the agent header). `--vscode` adds the same to `claudeCode.environmentVariables` |
-| `pocket attach codex` | Add `[model_providers.pocket]` and `model_provider = "pocket"` to `~/.codex/config.toml`, with a backup; writes a `codex-pocket` launcher that sets `POCKET_TOKEN` |
+| `pocket attach codex` | Add `[model_providers.pocket]` (`wire_api = "responses"`) and a `[profiles.pocket]` to `~/.codex/config.toml`, with a backup. Plain `codex` is not changed; the `codex-pocket` launcher runs `codex --profile pocket` with `POCKET_TOKEN` set |
 | `pocket attach cursor` | Print the base URL and key to paste into Cursor |
 | `pocket detach claude\|codex\|cursor` | Undo attach. Config files come back byte-identical |
 | `pocket dash` | Open the dashboard |
@@ -61,5 +61,6 @@ Streaming works end to end. A failure **before** the first token fails over; onc
 ## Agents
 
 - **Claude Code**: fully supported through `claude-pocket` or the VS Code extension settings.
-- **Codex CLI**: via `model_providers` (`wire_api = "chat"`).
+- **Codex CLI** (pocket 0.1.2+): a `pocket` provider and profile, speaking the Responses API at `/openai/v1/responses`. Function tools, Codex's freeform tools (`apply_patch`) and MCP namespaces are passed through; hosted tools (web search) and earlier reasoning items are dropped, because other providers can't run them. Checked against Codex's source; live reports welcome.
+- **Upgrading from 0.1.1**: Codex removed `wire_api = "chat"`, so a 0.1.1 attach stops Codex from starting. Run `pocket detach codex`, update, then `pocket attach codex` again. `pocket doctor` flags the old config.
 - **Cursor**: only the "own OpenAI key" chat path can be pointed at a custom base URL; Agent/Composer and Cursor's own models may not route through pocket at all, and Cursor may call custom URLs from its servers, where `127.0.0.1` is unreachable.
