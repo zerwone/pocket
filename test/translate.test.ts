@@ -59,7 +59,7 @@ describe('requests: Anthropic → OpenAI', () => {
     expect(anthropicToOpenAIRequest({ ...toolConversation, tool_choice: { type: 'any' } }, 'm').tool_choice).toBe('required');
   });
 
-  it('translates images to image_url parts, and rejects images inside tool results cleanly', () => {
+  it('translates images to image_url parts; tool-result images become a text note', () => {
     const req = { model: 'x', max_tokens: 10, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AAAA' } }, { type: 'text', text: 'what is this' }] }] };
     expect(hasImages(req)).toBe(true);
     expect(anthropicToOpenAIRequest(req, 'm').messages[0].content).toEqual([
@@ -67,14 +67,45 @@ describe('requests: Anthropic → OpenAI', () => {
       { type: 'text', text: 'what is this' },
     ]);
     const bad = { model: 'x', messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'A' } }] }] }] };
-    expect(hasImages(bad)).toBe(true);
-    expect(() => anthropicToOpenAIRequest(bad, 'm')).toThrow(TranslateError);
-    expect(() => anthropicToOpenAIRequest({ messages: [{ role: 'user', content: [{ type: 'document', source: {} }] }] }, 'm')).toThrow(/document blocks/);
+    // a screenshot inside a tool result must not block the whole session on text-only providers
+    expect(hasImages(bad)).toBe(false);
+    expect(anthropicToOpenAIRequest(bad, 'm').messages).toEqual([{ role: 'tool', tool_call_id: 't', content: '[image returned by the tool; this model cannot see images]' }]);
+    // unknown block types are skipped instead of failing the turn
+    expect(anthropicToOpenAIRequest({ messages: [{ role: 'user', content: [{ type: 'document', source: {} }, { type: 'text', text: 'hi' }] }] }, 'm').messages).toEqual([{ role: 'user', content: 'hi' }]);
   });
 
   it('drops thinking blocks', () => {
     const o = anthropicToOpenAIRequest({ messages: [{ role: 'user', content: [{ type: 'thinking', thinking: 'x' }, { type: 'text', text: 'hi' }] }] }, 'm');
     expect(o.messages).toEqual([{ role: 'user', content: 'hi' }]);
+  });
+});
+
+describe('requests: mid-conversation system turns (Claude Code 2.1+)', () => {
+  it('leading system turns join the system prompt; later ones ride with the next user turn after its tool results', () => {
+    const out = anthropicToOpenAIRequest(
+      {
+        system: 'base',
+        messages: [
+          { role: 'system', content: 'early note' },
+          { role: 'user', content: 'list files' },
+          { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'ls' } }] },
+          { role: 'system', content: [{ type: 'text', text: 'mid note' }] },
+          { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'a b' }, { type: 'text', text: 'thanks' }] },
+          { role: 'system', content: 'late note' },
+        ],
+        max_tokens: 100,
+      },
+      'm',
+    );
+    expect(out.messages).toEqual([
+      { role: 'system', content: 'base\n\nearly note' },
+      { role: 'user', content: 'list files' },
+      { role: 'assistant', content: null, tool_calls: [{ id: 't1', type: 'function', function: { name: 'Bash', arguments: '{"command":"ls"}' } }] },
+      { role: 'tool', tool_call_id: 't1', content: 'a b' },
+      { role: 'user', content: '<system-reminder>\nmid note\n</system-reminder>\nthanks' },
+      { role: 'user', content: '<system-reminder>\nlate note\n</system-reminder>' },
+    ]);
+    expect(out.messages.filter((m: any) => m.role === 'system')).toHaveLength(1);
   });
 });
 

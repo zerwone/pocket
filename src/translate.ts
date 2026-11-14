@@ -34,7 +34,8 @@ function toolResultText(content: J): string {
     return content
       .map((b) => {
         if (b?.type === 'text') return b.text;
-        if (b?.type === 'image') throw new TranslateError('images inside tool results are not supported by OpenAI-format providers', 422);
+        // OpenAI-format tool messages are text only; a screenshot from a tool is described, not sent
+        if (b?.type === 'image') return '[image returned by the tool; this model cannot see images]';
         return JSON.stringify(b);
       })
       .join('\n');
@@ -53,7 +54,7 @@ export function hasImages(anthropicReq: J): boolean {
   for (const m of anthropicReq.messages ?? []) {
     for (const b of blocks(m.content)) {
       if (b?.type === 'image') return true;
-      if (b?.type === 'tool_result' && Array.isArray(b.content) && b.content.some((x: J) => x?.type === 'image')) return true;
+      // images inside tool results (screenshots) are turned into a text note for OpenAI-format providers, so they don't count
     }
   }
   return false;
@@ -63,11 +64,29 @@ export function hasImages(anthropicReq: J): boolean {
 export function anthropicToOpenAIRequest(req: J, model: string): J {
   if (!Array.isArray(req.messages)) throw new TranslateError('messages is required');
   const messages: J[] = [];
-  const sys = systemText(req.system);
-  if (sys) messages.push({ role: 'system', content: sys });
+  const sysParts: string[] = [];
+  const top = systemText(req.system);
+  if (top) sysParts.push(top);
+  // Claude Code also sends role:"system" turns mid-conversation. Many open models only accept one
+  // system message at the start, so leading ones join it and later ones ride along with the next
+  // user turn (after its tool results, so tool call/result pairs stay adjacent).
+  let pendingSys: string[] = [];
+  let seenTurn = false;
   for (const m of req.messages) {
     const bs = blocks(m.content);
+    if (m.role === 'system' || m.role === 'developer') {
+      const t = bs.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+      if (!t) continue;
+      if (!seenTurn) sysParts.push(t);
+      else pendingSys.push(t);
+      continue;
+    }
+    seenTurn = true;
     if (m.role === 'assistant') {
+      if (pendingSys.length) {
+        messages.push({ role: 'user', content: pendingSys.map((t) => `<system-reminder>\n${t}\n</system-reminder>`).join('\n') });
+        pendingSys = [];
+      }
       const text = bs.filter((b) => b.type === 'text').map((b) => b.text).join('');
       const calls = bs
         .filter((b) => b.type === 'tool_use')
@@ -77,25 +96,28 @@ export function anthropicToOpenAIRequest(req: J, model: string): J {
       messages.push(msg);
       continue;
     }
-    if (m.role !== 'user') throw new TranslateError(`unsupported role "${m.role}"`);
+    // anything else is treated as the user side of the conversation rather than failing the turn
     // tool results become role:tool messages, which must directly follow the assistant turn
     for (const b of bs.filter((x) => x.type === 'tool_result')) {
       const text = toolResultText(b.content);
       messages.push({ role: 'tool', tool_call_id: b.tool_use_id, content: b.is_error ? `ERROR: ${text}` : text });
     }
     const rest = bs.filter((b) => b.type !== 'tool_result');
-    if (!rest.length) continue;
-    const parts: J[] = [];
+    const parts: J[] = pendingSys.map((t) => ({ type: 'text', text: `<system-reminder>\n${t}\n</system-reminder>` }));
+    pendingSys = [];
+    if (!rest.length && !parts.length) continue;
     for (const b of rest) {
       if (b.type === 'text') parts.push({ type: 'text', text: b.text });
       else if (b.type === 'image') parts.push(imagePart(b));
       else if (b.type === 'thinking' || b.type === 'redacted_thinking') continue;
-      else if (b.type === 'document') throw new TranslateError('document blocks are not supported by OpenAI-format providers', 422);
-      else throw new TranslateError(`unsupported content block "${b.type}"`);
+      else if (typeof b.text === 'string' && b.text) parts.push({ type: 'text', text: b.text });
+      // other block types (documents, server tool results, ...) have no OpenAI equivalent: skipped so the turn still goes through
     }
     if (!parts.length) continue;
     messages.push({ role: 'user', content: parts.every((p) => p.type === 'text') ? parts.map((p) => p.text).join('\n') : parts });
   }
+  if (pendingSys.length) messages.push({ role: 'user', content: pendingSys.map((t) => `<system-reminder>\n${t}\n</system-reminder>`).join('\n') });
+  if (sysParts.length) messages.unshift({ role: 'system', content: sysParts.join('\n\n') });
   const out: J = { model, messages, stream: !!req.stream };
   if (req.max_tokens !== undefined) out.max_tokens = req.max_tokens;
   if (req.temperature !== undefined) out.temperature = req.temperature;
