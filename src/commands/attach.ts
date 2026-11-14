@@ -212,7 +212,7 @@ export async function cmdAttach(ctx: Ctx, args: Args): Promise<number> {
     }
     att.claude = rec;
     saveAttachments(p, att);
-    ctx.out(`Run Claude Code through pocket with: ${launcher}   (put ${path.dirname(launcher)} on your PATH to type claude-pocket)`);
+    ctx.out(whichDir('claude-pocket', ctx.env) === path.dirname(launcher) ? 'Run Claude Code through pocket with: claude-pocket' : `Run Claude Code through pocket with: ${launcher}   (put ${path.dirname(launcher)} on your PATH to type claude-pocket)`);
     return 0;
   }
 
@@ -236,7 +236,7 @@ export async function cmdAttach(ctx: Ctx, args: Args): Promise<number> {
     att.codex = { agent, file, existed: !!origBuf, backup, after: text, origModelProviderLine: origLine, launcher };
     saveAttachments(p, att);
     ctx.out(`added [model_providers.pocket] and [profiles.pocket] to ${file}${origBuf ? ` (backup: ${backup})` : ''}; plain \`codex\` is unchanged`);
-    ctx.out(`Codex reads the local token from POCKET_TOKEN. Run: ${launcher}   (or export POCKET_TOKEN yourself)`);
+    ctx.out(whichDir('codex-pocket', ctx.env) === path.dirname(launcher) ? 'Run Codex through pocket with: codex-pocket   (plain `codex` is unchanged)' : `Run Codex through pocket with: ${launcher}   (put ${path.dirname(launcher)} on your PATH to type codex-pocket)`);
     return 0;
   }
 

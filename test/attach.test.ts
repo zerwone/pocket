@@ -139,7 +139,8 @@ describe('attach claude / detach claude', () => {
     expect(r.code, r.err).toBe(0);
     const file = path.join(npmBin, process.platform === 'win32' ? 'claude-pocket.cmd' : 'claude-pocket');
     expect(fs.existsSync(file)).toBe(true);
-    expect(r.out).not.toMatch(/to your PATH/);
+    expect(r.out).not.toMatch(/on your PATH/);
+    expect(r.out).toMatch(/with: claude-pocket$/m);
     await pocket(['detach', 'claude'], { ...env, PATH: npmBin });
     expect(fs.existsSync(file)).toBe(false);
     expect(fs.existsSync(path.join(npmBin, exe))).toBe(true);
