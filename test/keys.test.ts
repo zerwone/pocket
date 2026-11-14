@@ -53,7 +53,7 @@ describe('keys against the real OS keychain', () => {
     let r = await pocket(['keys', 'add', 'groq'], env, { secret: SECRET });
     expect(r.code, r.err).toBe(0);
     expect(r.out).toMatch(/groq: key stored in .*verified/);
-    expect(fake.requests.at(-1)!.path).toBe('/openai/v1/models');
+    expect(fake.modelRequests.at(-1)!.path).toBe('/openai/v1/models');
     // the key is really in the OS keychain
     expect((await osKeystore(SERVICE)).get('groq')).toBe(SECRET);
     r = await pocket(['keys', 'list', '--json'], env);
@@ -72,6 +72,7 @@ describe('keys against the real OS keychain', () => {
 
   it('a key the provider rejects is not stored', async (ctx) => {
     if (unavailable) ctx.skip();
+    (await osKeystore(SERVICE)).delete('groq'); // don't depend on the previous test cleaning up
     const r = await pocket(['keys', 'add', 'groq'], env, { secret: 'gsk_wrong' });
     expect(r.code).toBe(1);
     expect(r.err).toMatch(/rejected the key \(HTTP 401\); not stored/);
