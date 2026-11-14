@@ -4,7 +4,7 @@ import { PocketError } from './config.js';
 import { cmdDaemon } from './commands/daemon.js';
 import { cmdKeys } from './commands/keys.js';
 import { cmdAttach, cmdDetach } from './commands/attach.js';
-import { cmdDash, cmdDoctor, cmdLanes, cmdRoute } from './commands/misc.js';
+import { cmdDash, cmdDoctor, cmdLanes, cmdModels, cmdRoute } from './commands/misc.js';
 import { cmdSetup } from './commands/setup.js';
 
 export const HELP = `pocket: when your coding agent hits its usage limit, pocket moves it to your next key.
@@ -22,6 +22,7 @@ More:
   pocket attach cursor                   print the settings to paste into Cursor
   pocket detach claude|codex|cursor      undo attach; configs return byte-identical
   pocket doctor [--offline]              keychain, port, keys, stale limits, attached-but-down
+  pocket models [--refresh]              which model each provider will use, from its live list
   pocket staked sync [--repo path]       per-agent routing from a staked roles.yml provider_policy
 
 Providers: groq cerebras nvidia openrouter mistral anthropic openai (+ custom in providers.json)
@@ -39,6 +40,7 @@ const TABLE: Record<string, Cmd> = {
   detach: cmdDetach,
   dash: cmdDash,
   doctor: (c, a) => cmdDoctor(c, a),
+  models: (c, a) => cmdModels(c, a),
   staked: cmdLanes,
   lanes: cmdLanes, // pre-rename name
 };

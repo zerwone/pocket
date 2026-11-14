@@ -25,6 +25,7 @@ export interface Provider {
   notice?: string; // shown on `keys add` and in the dashboard (e.g. data-use terms)
   passthrough?: string; // model-name prefix sent unchanged, e.g. "claude-"
   tiers: Record<Tier, string>;
+  max_tokens?: number; // cap on max_tokens sent upstream (Claude Code asks for more than most open models allow)
   price_per_mtok?: Partial<Record<Tier, { input: number; output: number }>>;
 }
 

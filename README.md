@@ -93,7 +93,7 @@ Four options: wait for the limit to reset; switch Claude Code to a paid Anthropi
 OpenRouter is one provider and gateway; pocket can use an OpenRouter key as one step in its order. LiteLLM is a general proxy you configure yourself. claude-code-fallback moves you from a Claude subscription to Anthropic API billing only. pocket is narrower: one `pocket setup`, keys in your OS keychain, a quota meter per key, launchers for Claude Code and Codex, and a notice in the session each time it switches.
 
 **Which model answers after a switch?**
-The first one in your order with quota left. By default that is Groq (gpt-oss-120b, qwen3.8-27b or gpt-oss-20b, matched to what the agent asked for), then NVIDIA, OpenRouter and Cerebras. The reply names the provider and model.
+The first provider in your order with quota left (by default Groq, then NVIDIA, OpenRouter and Cerebras), and on it the best model its live model list offers your key right now, matched to what the agent asked for. pocket reads each provider's list itself, so a retired or no-longer-free model is skipped automatically. The reply names the provider and model; `pocket models` shows what it will pick.
 
 **Is it free? Is it allowed?**
 pocket is MIT-licensed. The free allowance comes from each provider's own free tier on your own account. pocket never pools or shares keys. Read each provider's terms; Mistral's free plan may train on your requests, so it is off by default.

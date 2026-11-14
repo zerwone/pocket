@@ -7,8 +7,8 @@ Everything the README leaves out.
 | id | base URL | format | free limits (verified 2026-11-08; see `providers.json`) | default models (strong / mid / fast) |
 | --- | --- | --- | --- | --- |
 | groq | `https://api.groq.com/openai/v1` | OpenAI | 30 req/min, 1,000 req/day, 200K tokens/day | gpt-oss-120b / qwen3.8-27b / gpt-oss-20b |
-| nvidia | `https://integrate.api.nvidia.com/v1` | OpenAI | ~40 req/min shared by every model on the key; no published daily cap | llama-3.3-70b-instruct (ids unverified) |
-| openrouter | `https://openrouter.ai/api/v1` | OpenAI | 20 req/min, 50 req/day (1,000 after a $10 lifetime credit purchase) | gpt-oss-120b:free / llama-3.3-70b-instruct:free |
+| nvidia | `https://integrate.api.nvidia.com/v1` | OpenAI | ~40 req/min shared by every model on the key; no published daily cap | kimi-k2.6 / deepseek-v4.1-flash / gpt-oss-20b (checked 2026-11-14) |
+| openrouter | `https://openrouter.ai/api/v1` | OpenAI | 20 req/min, 50 req/day (1,000 after a $10 lifetime credit purchase) | `openrouter/free` (OpenRouter picks a currently free model) |
 | cerebras | `https://api.cerebras.ai/v1` | OpenAI | **5 req/min**, 1M tokens/day, 65k context | gpt-oss-120b / qwen-3.8-27b |
 | mistral | `https://api.mistral.ai/v1` | OpenAI | 1 req/s, 500K tokens/min, 1B tokens/month; **free-plan requests may train Mistral's models**; off by default | mistral-large / medium / small |
 | anthropic | `https://api.anthropic.com` | Anthropic | paid; capped by `daily_cap_usd` |
@@ -56,6 +56,7 @@ Streaming works end to end. A failure **before** the first token fails over; onc
 | `pocket detach claude\|codex\|cursor` | Undo attach. Config files come back byte-identical |
 | `pocket dash` | Open the dashboard |
 | `pocket doctor` | Keychain available, port free, every key still valid, limits never verified or older than 30 days, agents attached while the daemon is down |
+| `pocket models [--refresh]` | Which model each provider will use for each tier, and whether that comes from its live list or from providers.json |
 | `pocket staked sync` | Read `provider_policy` from a staked `agents/roles.yml` (`pocket lanes sync` still works) and route each agent by it |
 
 ## Agents
@@ -64,3 +65,12 @@ Streaming works end to end. A failure **before** the first token fails over; onc
 - **Codex CLI** (pocket 0.1.2+): a `pocket` provider and profile, speaking the Responses API at `/openai/v1/responses`. Function tools, Codex's freeform tools (`apply_patch`) and MCP namespaces are passed through; hosted tools (web search) and earlier reasoning items are dropped, because other providers can't run them. Checked against Codex's source; live reports welcome.
 - **Upgrading from 0.1.1**: Codex removed `wire_api = "chat"`, so a 0.1.1 attach stops Codex from starting. Run `pocket detach codex`, update, then `pocket attach codex` again. `pocket doctor` flags the old config.
 - **Cursor**: only the "own OpenAI key" chat path can be pointed at a custom base URL; Agent/Composer and Cursor's own models may not route through pocket at all, and Cursor may call custom URLs from its servers, where `127.0.0.1` is unreachable.
+
+## How pocket picks models
+
+Nothing about models is fixed. On start and every 12 hours the daemon asks each provider you have a key for which models that key can use (`GET /models`), and caches the answer in `models.json` in pocket's config folder.
+
+- **Choosing:** the `tiers` in providers.json are preferences. A preferred model is used only if the live list still has it; otherwise pocket ranks the live list (current coding-capable families and size for `strong`/`mid`, small and fast models for `fast`), leaving out embedding, guard, speech and other non-chat models, models without tool calling, and on OpenRouter anything that isn't free.
+- **Self-healing:** if a provider answers that a model is retired, unknown or no longer free (410, or 404/400 naming the model), pocket drops that model for 24 hours, refreshes the list and tries the next model in the same request.
+- **Limits:** if a provider says `max_tokens` must be at most N, pocket remembers N for that model and resends the request once. Models whose list states a maximum output are capped up front.
+- **No list?** If a provider has no models endpoint or it fails, pocket uses providers.json as before.

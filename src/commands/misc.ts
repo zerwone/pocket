@@ -1,3 +1,4 @@
+import { Catalog } from '../catalog.js';
 import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as path from 'node:path';
@@ -181,5 +182,29 @@ export async function cmdRoute(ctx: Ctx, args: Args): Promise<number> {
   }
   ctx.out(`provider: ${r.headers.get('x-pocket-provider')}  model: ${r.headers.get('x-pocket-model')}  ${Date.now() - t0} ms`);
   ctx.out((body.content ?? []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join(''));
+  return 0;
+}
+
+// ------------------------------------------------------------------ models
+
+/** `pocket models [--refresh]`: which models pocket will use per provider and tier, and where that came from. */
+export async function cmdModels(ctx: Ctx, args: Args, ksOverride?: Keystore): Promise<number> {
+  const p = paths(ctx.env);
+  const providers = loadProviders(p);
+  const cat = Catalog.forPaths(p, () => Date.now(), () => {});
+  const ks = args.flags.refresh ? (ksOverride ?? (await keystoreFor(ctx.env))) : null;
+  for (const [id, prov] of Object.entries(providers)) {
+    const key = ks ? ks.get(id) : null;
+    if (ks && key) await cat.refresh(prov, key);
+    const at = cat.fetchedAt(id);
+    const live = cat.models(id);
+    const src = live && at ? `live list from ${new Date(at).toISOString().slice(0, 16).replace('T', ' ')} (${live.length} models)` : 'providers.json (no live list yet: run `pocket models --refresh`)';
+    ctx.out(`${id}: ${src}`);
+    for (const tier of ['strong', 'mid', 'fast'] as const) {
+      const c = cat.candidates(prov, tier);
+      ctx.out(`  ${tier.padEnd(6)} ${c.length ? c.join('  >  ') : '(nothing usable)'}`);
+    }
+  }
+  if (!args.flags.refresh) ctx.out('\nThe daemon refreshes these lists on its own; --refresh fetches them now with your keys.');
   return 0;
 }

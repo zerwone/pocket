@@ -146,7 +146,7 @@ describe('429 failover (spec integration test)', () => {
     let n = 0;
     r = await rig({
       paid: (req, res) => {
-        n++;
+        if (req.body) n++; // count message requests, not pocket's model-list GET
         json(res, 503, { error: 'overloaded' });
       },
     });
@@ -206,6 +206,22 @@ describe('429 failover (spec integration test)', () => {
     const res2 = await anthropicPost(r, img);
     expect(res2.status).toBe(422);
     expect(((await res2.json()) as any).error.message).toMatch(/contains images/);
+  });
+});
+
+describe('what real Claude Code sends (seen on a user install, 2026-11-14)', () => {
+  it('passes max_tokens through until the provider states a limit, and accepts mid-conversation system turns', async () => {
+    r = await rig({ policy: 'order: [groq]\n' });
+    const res = await anthropicPost(r, {
+      model: 'claude-opus-5-5',
+      max_tokens: 128000,
+      system: [{ type: 'text', text: 'You are Claude Code.' }],
+      messages: [{ role: 'user', content: 'hi' }, { role: 'system', content: 'reminder' }, { role: 'user', content: 'continue' }],
+    });
+    expect(res.status).toBe(200);
+    const sent = r.groq.requests[0].body;
+    expect(sent.max_tokens).toBe(128000); // no hardcoded cap: catalog.test.ts covers learning the real one
+    expect(sent.messages.filter((m: any) => m.role === 'system')).toEqual([{ role: 'system', content: 'You are Claude Code.' }]);
   });
 });
 

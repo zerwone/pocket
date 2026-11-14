@@ -26,18 +26,35 @@ export interface Fake {
   url: string;
   port: number;
   requests: FakeReq[];
+  /** GET .../models calls (pocket's live model list), kept out of `requests` */
+  modelRequests: FakeReq[];
+  /** what GET .../models returns; unset = the behaviour answers (404 if it can't) */
+  models?: unknown;
   behaviour: Behaviour;
   close: () => Promise<void>;
 }
 
 export async function fakeServer(behaviour: Behaviour): Promise<Fake> {
   const requests: FakeReq[] = [];
-  const fake: any = { requests, behaviour };
+  const modelRequests: FakeReq[] = [];
+  const fake: any = { requests, modelRequests, behaviour };
   const server = http.createServer(async (req, res) => {
     const chunks: Buffer[] = [];
     for await (const c of req) chunks.push(c as Buffer);
     const text = Buffer.concat(chunks).toString('utf8');
     const r: FakeReq = { path: req.url ?? '', headers: req.headers, body: text ? JSON.parse(text) : null };
+    if (req.method === 'GET' && /\/models(\?|$)/.test(r.path)) {
+      modelRequests.push(r);
+      if (fake.models !== undefined) return json(res, 200, fake.models);
+      // no list configured: let the behaviour answer (doctor's key checks use GET /models); a chat-only
+      // behaviour that can't handle it gets a 404, so pocket falls back to providers.json tiers
+      try {
+        return await fake.behaviour(r, res);
+      } catch {
+        if (!res.headersSent) return json(res, 404, { error: { message: 'not found' } });
+        return;
+      }
+    }
     requests.push(r);
     await fake.behaviour(r, res);
   });
@@ -61,7 +78,6 @@ export function json(res: http.ServerResponse, status: number, body: unknown, he
 /** An OpenAI-compatible provider that answers `text` (streaming or not), or a tool call when tools are offered and `tool` is set. */
 export function openAIBehaviour(text: string, opts: { tool?: { name: string; args: object }; delayMs?: number } = {}): Behaviour {
   return async (req, res) => {
-    if (req.path.endsWith('/models')) return json(res, 200, { data: [{ id: 'fake' }] });
     if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs));
     const model = req.body.model;
     const useTool = opts.tool && req.body.tools?.length && !req.body.messages.some((m: any) => m.role === 'tool');

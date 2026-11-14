@@ -1,3 +1,4 @@
+import { Catalog } from './catalog.js';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { DEFAULT_PORT, ensureDir, localToken, Paths, paths } from './config.js';
@@ -48,12 +49,15 @@ export async function startApp(opts: { env?: NodeJS.ProcessEnv; port?: number; h
     ((line: string) => {
       fs.appendFileSync(p.log, `${new Date().toISOString()} ${line}\n`);
     });
+  const now = opts.now ?? (() => Date.now());
+  const catalog = Catalog.forPaths(p, now, logFn);
   const deps: ServerDeps = {
+    catalog,
     providers: () => loadProviders(p),
     policy: () => loadPolicy(p),
     key: (id) => keys.get(id),
     state,
-    now: opts.now ?? (() => Date.now()),
+    now,
     log: logFn,
     token,
     port: opts.port ?? DEFAULT_PORT,
@@ -70,6 +74,8 @@ export async function startApp(opts: { env?: NodeJS.ProcessEnv; port?: number; h
   (server as any).exposed = !!opts.exposed;
   const port = await listen(server, opts.port ?? DEFAULT_PORT, opts.host ?? '127.0.0.1');
   deps.port = port;
+  // learn what each configured provider offers right now (background; requests never wait on it)
+  if (!opts.keystore || env.POCKET_WARM_MODELS === '1') for (const [id, prov] of Object.entries(loadProviders(p))) if (keys.get(id)) catalog.touch(prov, keys.get(id));
   return {
     server,
     port,

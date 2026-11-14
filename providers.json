@@ -41,12 +41,12 @@
       "limits": {
         "rpm": 40
       },
-      "verified_on": "2026-11-08",
-      "source": "community-verified ~40 rpm, account-wide across all models on the key; NVIDIA publishes no table and no daily cap. Model ids NOT verified.",
+      "verified_on": "2026-11-14",
+      "source": "model ids from https://integrate.api.nvidia.com/v1/models on 2026-11-14 (meta/llama-3.3-70b-instruct was retired, 410); ~40 rpm is community-verified, NVIDIA publishes no table",
       "tiers": {
-        "strong": "meta/llama-3.3-70b-instruct",
-        "mid": "meta/llama-3.3-70b-instruct",
-        "fast": "meta/llama-3.1-8b-instruct"
+        "strong": "moonshotai/kimi-k2.6",
+        "mid": "deepseek-ai/deepseek-v4.1-flash",
+        "fast": "openai/gpt-oss-20b"
       }
     },
     "openrouter": {
@@ -57,12 +57,12 @@
         "rpm": 20,
         "rpd": 50
       },
-      "verified_on": "2026-11-08",
-      "source": "https://openrouter.ai/docs/api/reference/limits (50 rpd; 1,000 rpd after $10 lifetime credit purchase: raise rpd in your override)",
+      "verified_on": "2026-11-14",
+      "source": "openrouter/free routes to a currently free model with the needed features, so retired :free ids don't break pocket. 50 rpd; 1,000 rpd after $10 lifetime credit purchase: raise rpd in your override. https://openrouter.ai/docs/api/reference/limits",
       "tiers": {
-        "strong": "openai/gpt-oss-120b:free",
-        "mid": "meta-llama/llama-3.3-70b-instruct:free",
-        "fast": "meta-llama/llama-3.3-70b-instruct:free"
+        "strong": "openrouter/free",
+        "mid": "openrouter/free",
+        "fast": "openrouter/free"
       }
     },
     "mistral": {

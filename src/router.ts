@@ -4,6 +4,7 @@ import { effective, Policy } from './policy.js';
 import { modelFor, Provider, Tier } from './providers.js';
 import { SseParser, sse } from './sse.js';
 import { AnthropicToResponsesStream, anthropicToResponsesResponse, toolMap, responsesToAnthropicRequest } from './responses.js';
+import { Catalog, capFromError, isModelGone } from './catalog.js';
 import { State } from './state.js';
 import {
   AEvent,
@@ -30,6 +31,7 @@ export interface RouterDeps {
   state: State;
   now: () => number;
   log: (line: string) => void;
+  catalog?: Catalog; // live model lists; without it pocket uses providers.json tiers as-is
 }
 
 export interface Inbound {
@@ -100,6 +102,9 @@ async function attempt(
   } else {
     url = p.base_url.replace(/\/$/, '') + '/chat/completions';
     body = anthropicToOpenAIRequest(areq, model);
+    // the limit this model accepts: learned from an earlier error or the provider's model list
+    const cap = deps.catalog?.cap(p.id, model) ?? p.max_tokens ?? null;
+    if (cap && typeof body.max_tokens === 'number' && body.max_tokens > cap) body.max_tokens = cap;
     if (key) headers.authorization = `Bearer ${key}`;
   }
 
@@ -312,50 +317,79 @@ export async function route(deps: RouterDeps, inb: Inbound, res: ServerResponse)
       skipped.push({ id, reason: 'no image support' });
       continue;
     }
-    const { model, tier } = modelFor(p, requested);
+    const { model: prefModel, tier } = modelFor(p, requested);
+    const passthru = !!p.passthrough && requested.startsWith(p.passthrough);
+    deps.catalog?.touch(p, key);
+    const models = passthru || !deps.catalog ? [prefModel] : deps.catalog.candidates(p, tier);
     const degraded = id !== primary;
-    const firstReason = failures[0] ? `${failures[0].id} ${reasonPhrase(failures[0].f)}` : skipped[0] ? `${skipped[0].id} ${skipped[0].reason}` : null;
-    const bannerKey = `${agentName}|${id}`;
-    const banner = degraded && pol.degraded_banner && !deps.state.bannerShown.has(bannerKey) ? `[pocket] running on ${id}/${model}${firstReason ? `, ${firstReason}` : ''}\n\n` : null;
-    const tries = 1 + pol.failover.retry_same_provider;
-    for (let t = 0; t < tries; t++) {
-      try {
-        let firstTokenAt = 0;
-        const usage = await attempt(deps, p, key, areq, model, tier, inb, res, banner, (at) => (firstTokenAt = at));
-        const now = deps.now();
-        deps.state.meter.tokens(id, usage.input + usage.output, costUsd(p, tier, usage.input, usage.output), now);
-        if (banner) deps.state.bannerShown.add(bannerKey);
-        if (failures.length) {
-          // a live failure happened in this request: log it with the 429-to-first-token latency
-          const f0 = failures[0];
-          deps.state.failover({ ts: new Date(now).toISOString(), agent: agentName, from: f0.id, to: id, reason: `${f0.id} ${reasonPhrase(f0.f)}`, latency_ms: firstTokenAt ? firstTokenAt - f0.f.at : null });
+    let providerDone = false;
+    for (const model of models) {
+      const firstReason = failures[0] ? `${failures[0].id} ${reasonPhrase(failures[0].f)}` : skipped[0] ? `${skipped[0].id} ${skipped[0].reason}` : null;
+      const bannerKey = `${agentName}|${id}`;
+      const banner = degraded && pol.degraded_banner && !deps.state.bannerShown.has(bannerKey) ? `[pocket] running on ${id}/${model}${firstReason ? `, ${firstReason}` : ''}\n\n` : null;
+      const tries = 1 + pol.failover.retry_same_provider;
+      let capRetried = false;
+      let nextModel = false;
+      for (let t = 0; t < tries; t++) {
+        try {
+          let firstTokenAt = 0;
+          const usage = await attempt(deps, p, key, areq, model, tier, inb, res, banner, (at) => (firstTokenAt = at));
+          const now = deps.now();
+          deps.state.meter.tokens(id, usage.input + usage.output, costUsd(p, tier, usage.input, usage.output), now);
+          if (banner) deps.state.bannerShown.add(bannerKey);
+          if (failures.length) {
+            // a live failure happened in this request: log it with the 429-to-first-token latency
+            const f0 = failures[0];
+            deps.state.failover({ ts: new Date(now).toISOString(), agent: agentName, from: f0.id, to: id, reason: `${f0.id} ${reasonPhrase(f0.f)}`, latency_ms: firstTokenAt ? firstTokenAt - f0.f.at : null });
+          }
+          deps.state.served(agentName, { provider: id, model, at: new Date(now).toISOString(), degraded, reason: degraded ? firstReason : null });
+          deps.log(`${agentName} ${requested} -> ${id}/${model}${degraded ? ` (degraded: ${firstReason})` : ''} in=${usage.input} out=${usage.output}`);
+          return;
+        } catch (e: any) {
+          if (!(e instanceof AttemptFailed)) throw e;
+          const f = e.f;
+          deps.state.meter.error(id, f.detail, deps.now());
+          deps.log(`${id} failed: ${f.kind} ${f.detail.slice(0, 120)}`);
+          if (f.kind === '4xx') {
+            // the provider told us its limit: remember it and send the same request again, once
+            const n = deps.catalog && !passthru ? capFromError(f.detail) : null;
+            if (n && !capRetried) {
+              deps.catalog!.learnCap(id, model, n);
+              capRetried = true;
+              t--;
+              continue;
+            }
+            // this model is gone for this key (retired, no longer free): drop it and try the next one
+            if (deps.catalog && !passthru && isModelGone(f.status, f.detail)) {
+              deps.catalog.markBad(p, model, key, f.detail);
+              nextModel = true;
+              break;
+            }
+            // anything else is a request this provider won't take: move to the next provider
+            failures.push({ id, f });
+            providerDone = true;
+            break;
+          }
+          const enabled = pol.failover.on.includes(f.kind as any);
+          if (!enabled) {
+            return sendJson(res, f.status ?? 502, errorBody(fmt, f.status ?? 502, `[pocket] ${id}: ${f.detail}`));
+          }
+          if (f.kind === '429') {
+            deps.state.meter.rateLimited(id, deps.now(), f.retryAfter ?? pol.failover.cooldown_seconds * 1000);
+            failures.push({ id, f });
+            providerDone = true;
+            break; // never hammer a provider that said 429
+          }
+          if (t === tries - 1) {
+            failures.push({ id, f });
+            providerDone = true;
+          }
         }
-        deps.state.served(agentName, { provider: id, model, at: new Date(now).toISOString(), degraded, reason: degraded ? firstReason : null });
-        deps.log(`${agentName} ${requested} -> ${id}/${model}${degraded ? ` (degraded: ${firstReason})` : ''} in=${usage.input} out=${usage.output}`);
-        return;
-      } catch (e: any) {
-        if (!(e instanceof AttemptFailed)) throw e;
-        const f = e.f;
-        deps.state.meter.error(id, f.detail, deps.now());
-        deps.log(`${id} failed: ${f.kind} ${f.detail.slice(0, 120)}`);
-        if (f.kind === '4xx') {
-          // the request itself is bad for this provider (e.g. unsupported parameter). Try the next one,
-          // but do not retry the same provider.
-          failures.push({ id, f });
-          break;
-        }
-        const enabled = pol.failover.on.includes(f.kind as any);
-        if (!enabled) {
-          return sendJson(res, f.status ?? 502, errorBody(fmt, f.status ?? 502, `[pocket] ${id}: ${f.detail}`));
-        }
-        if (f.kind === '429') {
-          deps.state.meter.rateLimited(id, deps.now(), f.retryAfter ?? pol.failover.cooldown_seconds * 1000);
-          failures.push({ id, f });
-          break; // never hammer a provider that said 429
-        }
-        if (t === tries - 1) failures.push({ id, f });
       }
+      if (providerDone) break;
+      if (!nextModel) break;
     }
+    if (!providerDone && deps.catalog && !passthru) failures.push({ id, f: { kind: '4xx', status: 404, detail: 'no working model in its live list', at: deps.now() } });
   }
 
   const reasons = [...failures.map((x) => `${x.id}: ${reasonPhrase(x.f)}`), ...skipped.map((s) => `${s.id}: ${s.reason}`)];
