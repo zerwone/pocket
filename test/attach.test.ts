@@ -130,6 +130,21 @@ describe('attach claude / detach claude', () => {
     expect(fs.existsSync(file)).toBe(false);
   });
 
+  it('puts the launcher next to the pocket command, so it is already on PATH', async () => {
+    const { env, home } = setup();
+    const npmBin = tmpDir();
+    const exe = process.platform === 'win32' ? 'pocket.cmd' : 'pocket';
+    fs.writeFileSync(path.join(npmBin, exe), '');
+    const r = await pocket(['attach', 'claude'], { ...env, PATH: npmBin, PATHEXT: '.CMD' });
+    expect(r.code, r.err).toBe(0);
+    const file = path.join(npmBin, process.platform === 'win32' ? 'claude-pocket.cmd' : 'claude-pocket');
+    expect(fs.existsSync(file)).toBe(true);
+    expect(r.out).not.toMatch(/to your PATH/);
+    await pocket(['detach', 'claude'], { ...env, PATH: npmBin });
+    expect(fs.existsSync(file)).toBe(false);
+    expect(fs.existsSync(path.join(npmBin, exe))).toBe(true);
+  });
+
   it('--vscode adds claudeCode.environmentVariables; detach leaves settings.json byte-identical', async () => {
     const { env, home } = setup();
     const vs = path.join(home, 'vscode-settings.json');

@@ -16,20 +16,25 @@ export const SETUP_PROVIDERS: { id: string; label: string; url: string; note: st
   { id: 'cerebras', label: 'Cerebras', url: 'https://cloud.cerebras.ai', note: '1M tokens/day, 5 requests/min' },
 ];
 
-/** Is `name` an executable on PATH? */
-export function onPath(name: string, env: NodeJS.ProcessEnv): boolean {
+/** The PATH directory holding executable `name`, or null. */
+export function whichDir(name: string, env: NodeJS.ProcessEnv): string | null {
   const exts = process.platform === 'win32' ? (env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';').map((e) => e.toLowerCase()) : [''];
   for (const dir of (env.PATH ?? env.Path ?? '').split(path.delimiter)) {
     if (!dir) continue;
     for (const ext of exts) {
       try {
-        if (fs.statSync(path.join(dir, name + ext)).isFile()) return true;
+        if (fs.statSync(path.join(dir, name + ext)).isFile()) return dir;
       } catch {
         /* not here */
       }
     }
   }
-  return false;
+  return null;
+}
+
+/** Is `name` an executable on PATH? */
+export function onPath(name: string, env: NodeJS.ProcessEnv): boolean {
+  return whichDir(name, env) !== null;
 }
 
 /** A ctx whose secret prompt returns a key we already read, so cmdKeys runs unchanged. */

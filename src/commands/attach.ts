@@ -1,3 +1,4 @@
+import { whichDir } from './setup.js';
 import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -24,8 +25,20 @@ function port(ctx: Ctx, args: Args): number {
   return Number(args.flags.port ?? ctx.env.POCKET_PORT ?? DEFAULT_PORT);
 }
 
+/** Where launchers go: --bin-dir, else next to the `pocket` command itself (already on PATH after
+ *  `npm i -g`, so `claude-pocket` just works), else pocket's own bin dir. */
 function binDir(ctx: Ctx, args: Args, p: Paths): string {
-  return typeof args.flags['bin-dir'] === 'string' ? path.resolve(ctx.cwd, args.flags['bin-dir']) : p.bin;
+  if (typeof args.flags['bin-dir'] === 'string') return path.resolve(ctx.cwd, args.flags['bin-dir']);
+  const d = whichDir('pocket', ctx.env);
+  if (d) {
+    try {
+      fs.accessSync(d, fs.constants.W_OK);
+      return d;
+    } catch {
+      /* not writable (system-wide install): fall back */
+    }
+  }
+  return p.bin;
 }
 
 const isWin = () => process.platform === 'win32';
