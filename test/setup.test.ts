@@ -39,12 +39,12 @@ describe('setup', () => {
     const bin = tmpDir('pocket-bin-');
     const env = { POCKET_HOME: home, PATH: fakeAgentDir(['claude']), PATHEXT: '.CMD' };
     const ks = memoryKeystore();
-    // groq, nvidia (skip), openrouter (skip), cerebras, anthropic (skip)
-    const s = scripted(env, ['gsk_test_key', '', '', 'csk_test_key', '']);
+    // groq, nvidia (skip), openrouter, anthropic (skip)
+    const s = scripted(env, ['gsk_test_key', '', 'sk-or-test_key', '']);
     const code = await cmdSetup(s.ctx, { _: [], flags: { 'no-verify': true, 'no-daemon': true, 'bin-dir': bin } }, ks);
     expect(code).toBe(0);
     expect(await ks.get('groq')).toBe('gsk_test_key');
-    expect(await ks.get('cerebras')).toBe('csk_test_key');
+    expect(await ks.get('openrouter')).toBe('sk-or-test_key');
     expect(await ks.get('nvidia')).toBeNull();
     expect(s.out()).toContain('Found: Claude Code');
     expect(s.out()).toContain('https://console.groq.com/keys');

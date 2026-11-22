@@ -75,19 +75,19 @@ describe('doctor', () => {
   it('checks keychain, port, key validity, unverified limits and attached-but-down', async () => {
     const home = tmpDir();
     const fake = await fakeServer((req, res) => (req.headers.authorization === 'Bearer good' ? json(res, 200, { data: [] }) : json(res, 401, {})));
-    fs.writeFileSync(path.join(home, 'providers.json'), JSON.stringify({ providers: { groq: { base_url: fake.url, verified_on: null }, cerebras: { base_url: fake.url, verified_on: '2026-01-01' } } }));
-    fs.writeFileSync(path.join(home, 'keys.json'), JSON.stringify({ groq: { added: '2026-11-01', verified_on: null }, cerebras: { added: '2026-11-01', verified_on: null } }));
+    fs.writeFileSync(path.join(home, 'providers.json'), JSON.stringify({ providers: { groq: { base_url: fake.url, verified_on: null }, nvidia: { base_url: fake.url, verified_on: '2026-01-01' } } }));
+    fs.writeFileSync(path.join(home, 'keys.json'), JSON.stringify({ groq: { added: '2026-11-01', verified_on: null }, nvidia: { added: '2026-11-01', verified_on: null } }));
     const port = String(await freePort());
     const env = { POCKET_HOME: home, POCKET_PORT: port };
     const { ctx, out } = ctxFor(env);
-    const code = await cmdDoctor(ctx, { _: [], flags: { json: true } }, memoryKeystore({ groq: 'good', cerebras: 'bad' }));
+    const code = await cmdDoctor(ctx, { _: [], flags: { json: true } }, memoryKeystore({ groq: 'good', nvidia: 'bad' }));
     const checks = JSON.parse(out());
     const msg = (c: string) => checks.filter((x: any) => x.check === c).map((x: any) => `${x.level}: ${x.message}`);
     expect(msg('keychain')[0]).toMatch(/^ok/);
     expect(msg('port')[0]).toMatch(new RegExp(`ok: port ${port} is free`));
-    expect(msg('key')).toEqual(expect.arrayContaining(['ok: groq: key valid', 'error: cerebras: key rejected (HTTP 401)']));
+    expect(msg('key')).toEqual(expect.arrayContaining(['ok: groq: key valid', 'error: nvidia: key rejected (HTTP 401)']));
     expect(msg('limits').join('\n')).toMatch(/groq: free-tier limits never verified/);
-    expect(msg('limits').join('\n')).toMatch(/cerebras: limits verified 2026-01-01, more than 30 days ago/);
+    expect(msg('limits').join('\n')).toMatch(/nvidia: limits verified 2026-01-01, more than 30 days ago/);
     expect(code).toBe(1);
     // verified keys get their date recorded
     expect(JSON.parse(fs.readFileSync(path.join(home, 'keys.json'), 'utf8')).groq.verified_on).toBe(new Date().toISOString().slice(0, 10));

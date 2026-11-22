@@ -1,6 +1,6 @@
 # pocket
 
-> pocket is a free, open-source (MIT) command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429). It runs a router on the user's own machine (127.0.0.1) and, when a provider refuses a request for quota, resends it to the next API key the user configured: Groq, NVIDIA, OpenRouter, Cerebras, Mistral (opt-in), Anthropic or OpenAI. Keys are stored in the OS keychain. Each switch is announced in the session with the provider and model now answering. Package: @zerwone/pocket. Command: pocket.
+> pocket is a free, open-source (MIT) command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429). It runs a router on the user's own machine (127.0.0.1) and, when a provider refuses a request for quota, resends it to the next API key the user configured: Groq, NVIDIA, OpenRouter, Anthropic or OpenAI by default; Mistral, Gemini, Z.ai, Kilo, Cohere, Vercel AI Gateway and Cerebras (trial only) opt-in. Keys are stored in the OS keychain. Each switch is announced in the session with the provider and model now answering. Package: @zerwone/pocket. Command: pocket.
 
 Key facts:
 - Bring your own keys only. No pooled or shared keys, no pocket account, no telemetry. Requests go to the provider the user configured.

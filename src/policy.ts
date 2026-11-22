@@ -22,7 +22,7 @@ order:
   - groq
   - nvidia
   - openrouter
-  - cerebras           # 5 rpm on the free trial: last-resort reserve
+  # - cerebras         # no free tier since July 2026: a $5, 30-day trial; uncomment while it lasts
   # - mistral          # free plan requests may train Mistral's models; uncomment to accept
 caps:
   anthropic: { daily_cap_usd: 10 }

@@ -21,7 +21,7 @@
   <a href="docs/REFERENCE.md">Reference</a>
 </p>
 
-**pocket is a free, open-source command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429).** It runs a small router on your own machine. When your current provider refuses a request for quota, it resends it to the next API key you configured (Groq, NVIDIA, OpenRouter, Cerebras, or your Anthropic or OpenAI key) and tells you which model is now answering.
+**pocket is a free, open-source command-line tool that keeps Claude Code and Codex working when they hit a usage limit or rate limit (HTTP 429).** It runs a small router on your own machine. When your current provider refuses a request for quota, it resends it to the next API key you configured (Groq, NVIDIA, OpenRouter and others, or your Anthropic or OpenAI key) and tells you which model is now answering.
 
 <p align="center"><img src="docs/brand/demo.gif" alt="pocket demo" width="720"></p>
 <p align="center"><sub>Stand-in providers; the limit is simulated. The switch notice and log lines are pocket's real output.</sub></p>
@@ -37,8 +37,7 @@ claude-pocket ──► pocket (127.0.0.1:3460, on your machine)
                     │      429 "usage limit"? ──┐
                     ├─► 2. Groq        (free)  ◄┘  next key with quota left
                     ├─► 3. NVIDIA      (free)
-                    ├─► 4. OpenRouter  (free)
-                    └─► 5. Cerebras    (free)
+                    └─► 4. OpenRouter  (free)
 ```
 
 1. You start your agent through pocket (`claude-pocket` instead of `claude`). It looks and works exactly the same.
@@ -139,9 +138,8 @@ Your files are the same; the conversation is not. To hand over cleanly, ask Clau
 | Groq | 1,000 requests/day | [console.groq.com/keys](https://console.groq.com/keys) |
 | NVIDIA | ~40 requests/min | [build.nvidia.com](https://build.nvidia.com) |
 | OpenRouter | 50 requests/day (1,000 after a one-time $10 top-up) | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
-| Cerebras | 1M tokens/day, 5 requests/min | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 
-Checked against each provider's docs on 2026-11-08. Five more are supported but off until you turn them on in setup, because of how they treat your data:
+Checked against each provider's docs on 2026-11-08 (Cerebras rechecked 2026-11-22: its free tier is gone, see below). More are supported but off until you turn them on in setup, because of how they treat your data:
 
 | Provider | Free | Why it's off by default |
 | --- | --- | --- |
@@ -150,6 +148,8 @@ Checked against each provider's docs on 2026-11-08. Five more are supported but 
 | Z.ai | GLM-4.7-Flash, GLM-4.5-Flash ([pricing](https://docs.z.ai/guides/overview/pricing.md)) | pocket hasn't verified its data terms |
 | Kilo Gateway | `:free` models and `kilo-auto/free` ([docs](https://kilo.ai/docs/code-with-ai/agents/free-and-budget-models)) | free routes may go to providers that log prompts and train on them |
 | Cohere | trial key: 20 requests/min, 1,000/month ([limits](https://docs.cohere.com/docs/rate-limits)) | trial keys are for evaluation |
+| Vercel AI Gateway | a monthly free credit on a subset of models ([pricing](https://vercel.com/docs/ai-gateway/pricing)) | the credit is small and spent at list price; pocket keeps to low-cost open models |
+| Cerebras | $5 trial, expires after 30 days, needs a card ([limits](https://inference-docs.cerebras.ai/support/rate-limits)) | no free tier since July 2026 |
 
 Not added, after checking: GitHub Models (retired July 2026), Hugging Face (no free credits for free accounts), Ollama Cloud (no free plan), SambaNova (20 requests/day), Cloudflare Workers AI (10,000 neurons/day is about a dozen coding turns on gpt-oss-120b), LongCat (no free quota in its current docs), OpenCode Zen (free models only work inside OpenCode), Baidu/ByteDance/iFlytek (need Chinese real-name verification), and resellers whose terms or ownership pocket can't check. pocket sends your code to these services, so it only lists ones you can look up.
 
@@ -218,7 +218,7 @@ Four options: wait for the limit to reset; switch Claude Code to a paid Anthropi
 OpenRouter is one provider and gateway; pocket can use an OpenRouter key as one step in its order. LiteLLM is a general proxy you configure yourself. claude-code-fallback moves you from a Claude subscription to Anthropic API billing only. pocket is narrower: one `pocket setup`, keys in your OS keychain, a quota meter per key, launchers for Claude Code and Codex, and a notice in the session each time it switches.
 
 **Which model answers after a switch?**
-The first provider in your order with quota left (by default Groq, then NVIDIA, OpenRouter and Cerebras), and on it the best model its live model list offers your key right now, matched to what the agent asked for. pocket reads each provider's list itself, so a retired or no-longer-free model is skipped automatically. The reply names the provider and model; `pocket models` shows what it will pick.
+The first provider in your order with quota left (by default Groq, then NVIDIA and OpenRouter), and on it the best model its live model list offers your key right now, matched to what the agent asked for. pocket reads each provider's list itself, so a retired or no-longer-free model is skipped automatically. The reply names the provider and model; `pocket models` shows what it will pick.
 
 **Is it free? Is it allowed?**
 pocket is MIT-licensed. The free allowance comes from each provider's own free tier on your own account. pocket never pools or shares keys. Read each provider's terms; Mistral's free plan may train on your requests, so it is off by default.

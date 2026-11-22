@@ -9,11 +9,12 @@ Everything the README leaves out.
 | groq | `https://api.groq.com/openai/v1` | OpenAI | 30 req/min, 1,000 req/day, 200K tokens/day | gpt-oss-120b / qwen3.8-27b / gpt-oss-20b |
 | nvidia | `https://integrate.api.nvidia.com/v1` | OpenAI | ~40 req/min shared by every model on the key; no published daily cap | kimi-k2.6 / deepseek-v4.1-flash / gpt-oss-20b (checked 2026-11-14) |
 | openrouter | `https://openrouter.ai/api/v1` | OpenAI | 20 req/min, 50 req/day (1,000 after a $10 lifetime credit purchase) | `openrouter/free` (OpenRouter picks a currently free model) |
-| cerebras | `https://api.cerebras.ai/v1` | OpenAI | **5 req/min**, 1M tokens/day, 65k context | gpt-oss-120b / qwen-3.8-27b |
+| cerebras | `https://api.cerebras.ai/v1` | OpenAI | **no free tier since July 2026**: $5 trial, 30 days, card required; trial limits 5 req/min, 1M tokens/day (checked 2026-11-22); off by default | gpt-oss-120b / qwen-3.8-27b |
 | mistral | `https://api.mistral.ai/v1` | OpenAI | 1 req/s, 500K tokens/min, 1B tokens/month; **free-plan requests may train Mistral's models**; off by default | mistral-large / medium / small |
 | gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | OpenAI | per-model free quota, published only in AI Studio; models with no free quota answer 429 `limit: 0` and pocket skips them for 24h; **free-tier prompts may be used to improve Google's products**; off by default | live list (`models/` prefix stripped) |
 | zai | `https://api.z.ai/api/paas/v4` | OpenAI | GLM-4.7-Flash and GLM-4.5-Flash free (checked 2026-11-22); no published rate limits; `free_models: "-flash$"` keeps pocket off paid GLM models; off by default | glm-4.7-flash / glm-4.7-flash / glm-4.5-flash |
 | kilo | `https://ai-gateway.kilo.ai/api/v1` | OpenAI | free models change; `free_models` keeps pocket on `:free` ids and `kilo-auto/free`; **free routes may log and train**; off by default | kilo-auto/free |
+| vercel | `https://ai-gateway.vercel.sh/v1` | OpenAI | monthly free credit, subset of models, per-model rate limits; 402 when spent; `free_models` keeps to low-cost open models; off by default | openai/gpt-oss-120b / gpt-oss-120b / gpt-oss-20b |
 | cohere | `https://api.cohere.ai/compatibility/v1` | OpenAI | trial key: 20 req/min, 1,000 calls/month; off by default | command-a-plus-05-2026 |
 | anthropic | `https://api.anthropic.com` | Anthropic | paid; capped by `daily_cap_usd` |
 | openai | `https://api.openai.com/v1` | OpenAI | paid; capped by `daily_cap_usd` |
@@ -29,7 +30,7 @@ order:                 # tried top to bottom until one has headroom
   - groq
   - nvidia
   - openrouter
-  - cerebras           # 5 rpm: last-resort reserve
+  # - cerebras         # $5, 30-day trial only; uncomment while it lasts
   # - mistral          # free plan may train on your requests; uncomment to accept
 caps:
   anthropic: { daily_cap_usd: 10 }

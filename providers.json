@@ -1,5 +1,5 @@
 {
-  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). gemini, zai, kilo and cohere added 2026-11-22 from their docs. Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
+  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). gemini, zai, kilo, cohere and vercel added and cerebras rechecked 2026-11-22 from their docs. Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
   "providers": {
     "groq": {
       "label": "Groq",
@@ -24,7 +24,7 @@
     "cerebras": {
       "label": "Cerebras",
       "signup": "https://cloud.cerebras.ai",
-      "setup_note": "1M tokens a day, 5 requests a minute",
+      "setup_note": "$5 trial credit for 30 days; needs a card",
       "base_url": "https://api.cerebras.ai/v1",
       "format": "openai",
       "paid": false,
@@ -32,13 +32,14 @@
         "rpm": 5,
         "tpd": 1000000
       },
-      "verified_on": "2026-11-08",
-      "source": "https://inference-docs.cerebras.ai/support/rate-limits (free trial: 5 rpm, 1M tokens/day; 65k context)",
+      "verified_on": "2026-11-22",
+      "source": "https://inference-docs.cerebras.ai/support/rate-limits (checked 2026-11-22): no permanent free tier; the Free Trial is $5 in credits that expire 30 days after they are granted, after adding a verified payment method. Trial limits for gpt-oss-120b: 5 rpm, 1M tokens/day.",
       "tiers": {
         "strong": "gpt-oss-120b",
         "mid": "qwen-3.8-27b",
         "fast": "qwen-3.8-27b"
-      }
+      },
+      "notice": "Cerebras no longer has a free tier: new accounts get a $5 trial that expires after 30 days and needs a verified payment method. Not in the default order; add it while your trial lasts."
     },
     "nvidia": {
       "label": "NVIDIA",
@@ -168,6 +169,24 @@
         "fast": "command-a-plus-05-2026"
       },
       "notice": "Cohere's free keys are trial keys meant for evaluation: 1,000 calls a month in total. Not in the default order; add it if that is acceptable."
+    },
+    "vercel": {
+      "label": "Vercel AI Gateway",
+      "signup": "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys",
+      "setup_note": "free credit every month on a Hobby account; a subset of models",
+      "base_url": "https://ai-gateway.vercel.sh/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {},
+      "verified_on": "2026-11-22",
+      "source": "Base URL and /models: https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions. Free tier: monthly free credit on a subset of models, spent at list price, rate limited per model; buying credits ends the free credit (https://vercel.com/docs/ai-gateway/pricing). free_models keeps pocket on low-cost open models so the credit lasts.",
+      "free_models": "gpt-oss|deepseek|qwen|kimi|glm|minimax",
+      "tiers": {
+        "strong": "openai/gpt-oss-120b",
+        "mid": "openai/gpt-oss-120b",
+        "fast": "openai/gpt-oss-20b"
+      },
+      "notice": "Vercel's free tier is a small monthly credit spent at each model's list price, and only some models are in it; when it runs out Vercel answers 402 and pocket moves on. Not in the default order; add it if you want it as a last resort."
     },
     "anthropic": {
       "label": "Anthropic",

@@ -60,7 +60,7 @@ describe('quota meter', () => {
 describe('policy', () => {
   it('parses the default policy file from the spec', () => {
     const p = parsePolicy(DEFAULT_POLICY_YAML);
-    expect(p.order).toEqual(['anthropic', 'groq', 'nvidia', 'openrouter', 'cerebras']);
+    expect(p.order).toEqual(['anthropic', 'groq', 'nvidia', 'openrouter']);
     expect(p.caps.anthropic.daily_cap_usd).toBe(10);
     expect(p.caps.openai.daily_cap_usd).toBe(0);
     expect(p.failover).toEqual({ on: ['429', '5xx', 'timeout', 'connection'], retry_same_provider: 1, cooldown_seconds: 60, timeout_seconds: 60 });
