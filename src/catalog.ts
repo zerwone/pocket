@@ -33,7 +33,7 @@ const BAD_MS = 24 * 3600_000;
 const FETCH_TIMEOUT_MS = 8000;
 
 // Not chat models. Patterns over names, so new releases in these families are excluded too.
-const NOT_CHAT = /embed|rerank|guard|safety|reward|moderation|whisper|tts|speech|audio|transcri|parse|ocr|clip|detector|calibration|retriever|translate|vision-only|image-gen|diffusion|video|playai|orpheus|deplot|kosmos|fuyu|neva|vila|cosmos|compound|-base$|instruct-v0\.1$/i;
+const NOT_CHAT = /embed|rerank|guard|safety|reward|moderation|whisper|tts|speech|audio|transcri|parse|ocr|clip|detector|calibration|retriever|translate|vision-only|image-gen|diffusion|video|playai|orpheus|deplot|kosmos|fuyu|neva|vila|cosmos|compound|imagen|veo-|lyria|\baqa\b|-image(-|$)|robotics|computer-use|-live\b|-base$|instruct-v0\.1$/i;
 // Old generations that newer open models clearly beat for coding agents.
 const OLD = /llama-?2|llama-?3(\.[0-2])?[-_]|llama3-|codellama|mixtral|mistral-7b|yi-|dbrx|jamba|starcoder|codegemma|gemma-?[123]\b|gemma-[123][-.]|phi-?3|granite-3\.0|zamba|sea-lion|chatqa|minitron|nemotron-4|palmyra/i;
 // Families that do well as coding agents with tools: a ranking nudge, not a whitelist.
@@ -54,6 +54,13 @@ export function usable(p: Provider, m: ModelInfo): boolean {
   if (NOT_CHAT.test(m.id)) return false;
   if (m.tools === false) return false; // coding agents need tool calls
   if (p.id === 'openrouter') return m.id === 'openrouter/free' || m.id.endsWith(':free') || m.free === true;
+  if (p.free_models) {
+    try {
+      return new RegExp(p.free_models, 'i').test(m.id);
+    } catch {
+      return true; // a broken pattern in a user override should not hide every model
+    }
+  }
   return true;
 }
 
@@ -92,8 +99,9 @@ export function parseModels(json: any): ModelInfo[] {
   const list: any[] = Array.isArray(json?.data) ? json.data : Array.isArray(json?.models) ? json.models : Array.isArray(json) ? json : [];
   const out: ModelInfo[] = [];
   for (const m of list) {
-    const id = typeof m?.id === 'string' ? m.id : typeof m?.name === 'string' ? m.name : null;
-    if (!id) continue;
+    const raw = typeof m?.id === 'string' ? m.id : typeof m?.name === 'string' ? m.name : null;
+    if (!raw) continue;
+    const id = raw.replace(/^models\//, ''); // Gemini lists "models/gemini-…"; chat takes the bare id
     if (m.active === false) continue; // Groq marks retired models inactive
     const info: ModelInfo = { id };
     const ctx = m.context_length ?? m.context_window ?? m.max_context_length ?? m.top_provider?.context_length;
@@ -114,6 +122,8 @@ export function parseModels(json: any): ModelInfo[] {
 /** "this model is gone for you" (retired, renamed, no longer free) as opposed to a bad request. Pure. */
 export function isModelGone(status: number | undefined, detail: string): boolean {
   if (status === 410) return true;
+  // a 429 whose quota for this model is zero: the model has no free tier, the provider is fine (Gemini)
+  if (status === 429) return /\blimit:\s*0\b|no free (tier|quota)/i.test(detail);
   if (status !== 404 && status !== 400 && status !== 403 && status !== 422) return false;
   return /model/i.test(detail) && /not (be )?found|does not exist|doesn't exist|decommission|deprecat|retired|reached its end|no longer|unavailable|not available|not supported|unknown model|invalid model/i.test(detail);
 }

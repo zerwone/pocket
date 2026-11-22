@@ -91,7 +91,7 @@
     <p class="lede">Your own keys, in your OS keychain. Runs on your machine. Every switch names the model now answering.</p>
     <div class="copyrow">
       <pre class="term" id="install"><span class="p">$ </span>npm i -g @zerwone/pocket
-<span class="p">$ </span>pocket setup
+<span class="p">$ </span>pocket
 <span class="p">$ </span>claude-pocket</pre>
       <button class="copy" type="button" data-copy="install">Copy</button>
     </div>
@@ -127,8 +127,8 @@
       <h2>Use it</h2>
       <p><strong>1. Install</strong> (<a href="https://www.npmjs.com/package/@zerwone/pocket">npm</a>):</p>
       <pre class="term"><span class="p">$ </span>npm i -g @zerwone/pocket</pre>
-      <p style="margin-top:14px"><strong>2. Set it up once.</strong> <code>pocket setup</code> finds Claude Code and Codex, walks you through free keys from Groq, NVIDIA, OpenRouter and Cerebras (with the signup link for each; skip any you don't want), optionally adds your paid key (used first, up to $10 a day), and connects your agents.</p>
-      <pre class="term"><span class="p">$ </span>pocket setup</pre>
+      <p style="margin-top:14px"><strong>2. Set it up once.</strong> Run <code>pocket</code>. It opens a setup page in your browser: paste free keys from Groq, NVIDIA, OpenRouter and Cerebras (with the signup link for each), optionally your paid key (used first, up to $10 a day), and connect Claude Code, Codex, the Codex app or Claude Desktop with one click each. <code>pocket setup</code> does the same in the terminal.</p>
+      <pre class="term"><span class="p">$ </span>pocket</pre>
       <p style="margin-top:14px"><strong>3. Start your agent through pocket</strong>, from your project folder. Plain <code>claude</code> and <code>codex</code> keep working as before.</p>
       <pre class="term"><span class="p">$ </span>cd my-project
 <span class="p">$ </span>claude-pocket     <span class="c"># instead of: claude</span>

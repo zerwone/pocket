@@ -70,6 +70,7 @@ export async function startApp(opts: { env?: NodeJS.ProcessEnv; port?: number; h
       return out;
     },
   };
+  deps.setup = { env, keystore: ks, port: () => deps.port, reloadKeys: () => keys.clear() };
   const server = createServer(deps);
   (server as any).exposed = !!opts.exposed;
   const port = await listen(server, opts.port ?? DEFAULT_PORT, opts.host ?? '127.0.0.1');

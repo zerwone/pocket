@@ -1,6 +1,6 @@
 # pocket: handoff
 
-State as of 2026-11-17. Read this before changing anything.
+State as of 2026-11-22 (unreleased work on main since 0.2.0: see "Next release"). Read this before changing anything.
 
 ## Where things are
 
@@ -29,8 +29,10 @@ A local router (127.0.0.1:3460) that keeps Claude Code and Codex working when a 
 | `src/policy.ts` | Default order and failover settings; user override in `policy.yaml` |
 | `src/meter.ts`, `src/state.ts` | Quota meter per key, spend, failover log for the dashboard |
 | `src/keystore.ts` | Windows Credential Manager / macOS Keychain / Secret Service |
-| `src/commands/setup.ts` | `pocket setup` wizard |
-| `src/commands/attach.ts` | `attach`/`detach` for claude, codex, cursor; writes launchers next to the `pocket` command; Codex gets `[model_providers.pocket]` + `[profiles.pocket]`, never the top-level provider |
+| `src/commands/setup.ts` | `pocket setup` terminal wizard; free providers come from providers.json (`label`, `signup`, `setup_note`) |
+| `src/setupapi.ts`, `src/dash/setup.html`, `src/dash/setup.js` | The setup page `pocket` (no args) opens: `/setup` + `/setup/api/*`. Every action calls the CLI command it stands for. Changes need the `x-pocket-setup: 1` header and a loopback Origin |
+| `src/install.ts` | npx detection; launchers point at a global install when pocket runs from npx's cache |
+| `src/commands/attach.ts` | `attach`/`detach` for claude, codex, codex-app, claude-desktop, cursor; writes launchers next to the `pocket` command; Codex gets `[model_providers.pocket]` + `[profiles.pocket]`, never the top-level provider |
 | `src/commands/misc.ts` | `doctor`, `models`, `dash`, `route` |
 | `src/dash/` | The local dashboard page |
 | `test/` | vitest; `test/helpers.ts` has the fake providers (`rig`, `openAIBehaviour`, `rateLimited`) |
@@ -51,6 +53,16 @@ A local router (127.0.0.1:3460) that keeps Claude Code and Codex working when a 
 3. `npm deprecate @zerwone/pocket@"<x.y.z" "use x.y.z or later"`.
 4. GitHub release `vx.y.z` with plain-language notes and the upgrade commands.
 5. The npm page README only updates on publish.
+
+## Next release (on main, not published)
+
+- `pocket` with no arguments opens a setup page (keys, apps, test request).
+- Codex desktop app: `attach codex-app` (top-level `model_provider = "pocket_app"`, token in `experimental_bearer_token`, field checked in Codex's Rust source `model-provider-info/src/lib.rs`).
+- Claude Desktop: `/desktop` gateway route + `attach claude-desktop` import file (keys from claude.com/docs/third-party/claude-desktop/gateway).
+- Providers: gemini and zai (opt-in, data notices), `free_models` regex, `models/` prefix stripped, 429 `limit: 0` drops the model not the provider.
+- Quota: `x-ratelimit-*` headers recorded (dashboard `live`), remaining 0 cools down until reset, 429 cooldown doubles without a stated wait.
+- Claude launcher sets `CLAUDE_CODE_AUTO_MODE_SERVER=0`.
+- **Before release, real installs (CLAUDE.md rule):** Windows smoke test from HANDOFF plus: `npx @zerwone/pocket@<tarball>` → page opens → Install pocket → connect Claude Code → `claude-pocket` turn. Codex app: connect, restart app, one turn, disconnect, config byte-identical. Claude Desktop: import the file, run the app's Test connection against `http://127.0.0.1:3460/desktop` (unknown whether the app accepts http/loopback), one Cowork turn. Gemini and Z.ai: one real key each through `pocket models --refresh` (Z.ai's /models may not exist; then providers.json tiers are used).
 
 ## History that matters
 

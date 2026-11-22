@@ -1,4 +1,5 @@
 import { whichDir } from './setup.js';
+import { launcherMain } from '../install.js';
 import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -6,11 +7,22 @@ import * as path from 'node:path';
 import { parse as parseToml } from 'smol-toml';
 import { Args, Ctx } from '../ctx.js';
 import { DEFAULT_PORT, localToken, Paths, paths, PocketError, readJson, readText, writePrivate } from '../config.js';
+import { loadProviders, Provider } from '../providers.js';
+
+function loadProvidersSafe(p: Paths): Record<string, Provider> | null {
+  try {
+    return loadProviders(p);
+  } catch {
+    return null;
+  }
+}
 
 export interface Attachments {
   claude?: { agent: string; launcher: string; vscode?: { file: string; existed: boolean; before: string; after: string } };
   codex?: { agent: string; file: string; existed: boolean; backup: string; after: string; origModelProviderLine: string | null; launcher: string };
   cursor?: { agent: string; printed: string };
+  codexApp?: { file: string; existed: boolean; backup: string; after: string };
+  claudeDesktop?: { file: string };
 }
 
 export function readAttachments(p: Paths): Attachments {
@@ -43,7 +55,7 @@ function binDir(ctx: Ctx, args: Args, p: Paths): string {
 
 const isWin = () => process.platform === 'win32';
 
-const POCKET_MAIN = () => fileURLToPath(new URL('../main.js', import.meta.url));
+const POCKET_MAIN = () => launcherMain(process.env);
 
 const INSTALL_HINT: Record<string, string> = {
   claude: 'Claude Code is not installed (no `claude` on PATH). Install it: https://code.claude.com/docs/en/setup',
@@ -167,6 +179,94 @@ export function codexDetachText(cur: string, origLine: string | null): string {
   return lines.join(eol);
 }
 
+// ------------------------------------------------------------------ Codex desktop app (opt-in: switches the whole app)
+
+export const APP_BEGIN = '# >>> pocket-app: added by `pocket attach codex-app`; remove with `pocket detach codex-app`';
+export const APP_END = '# <<< pocket-app';
+export const APP_LINE = 'model_provider = "pocket_app" # pocket-app';
+
+function stripApp(o: any) {
+  const c = structuredClone(o ?? {});
+  if (c.model_provider === 'pocket_app') delete c.model_provider;
+  if (c.model_providers) {
+    delete c.model_providers.pocket_app;
+    if (!Object.keys(c.model_providers).length) delete c.model_providers;
+  }
+  return c;
+}
+
+/** Pure: config.toml with the Codex app pointed at pocket. The app starts from the desktop, so it never
+ *  sees a shell variable: the local token goes in the file (experimental_bearer_token). That token only
+ *  works against 127.0.0.1 and is already on disk in pocket's config dir. */
+export function codexAppAttachText(orig: string | null, baseUrl: string, token: string): string {
+  const src = orig ?? '';
+  let before: any = {};
+  try {
+    before = parseToml(src);
+  } catch (e: any) {
+    throw new PocketError(`~/.codex/config.toml does not parse as TOML (${e.message}); not touching it`);
+  }
+  if (before.model_providers?.pocket_app || src.includes(APP_BEGIN)) throw new PocketError('the Codex app is already pointed at pocket');
+  if (typeof before.model_provider === 'string') throw new PocketError(`config.toml already sets model_provider = "${before.model_provider}" for the whole app; pocket will not override it. Remove that line first if you want the app on pocket.`);
+  const eol = eolOf(src);
+  let body = src;
+  if (body.length && !body.endsWith(eol)) body += eol;
+  const block = [APP_BEGIN, '[model_providers.pocket_app]', 'name = "pocket"', `base_url = "${baseUrl}"`, `experimental_bearer_token = "${token}"`, 'wire_api = "responses"', 'http_headers = { "x-pocket-agent" = "codex-app" }', APP_END].join(eol);
+  // a top-level key must come before the first [table]: put ours on the first line
+  const text = APP_LINE + eol + body + (body.trim().length ? eol : '') + block + eol;
+  let after: any;
+  try {
+    after = parseToml(text);
+  } catch (e: any) {
+    throw new PocketError(`pointing the Codex app at pocket would break config.toml (${e.message}); not touching it`);
+  }
+  if (JSON.stringify(stripApp(after)) !== JSON.stringify(stripApp(before))) throw new PocketError('internal: attach would change other keys in config.toml; refusing');
+  if (after.model_provider !== 'pocket_app' || after.model_providers?.pocket_app?.base_url !== baseUrl) throw new PocketError('internal: attach did not produce the pocket_app provider; refusing');
+  return text;
+}
+
+/** Pure: remove only what codexAppAttachText added. */
+export function codexAppDetachText(cur: string): string {
+  const eol = eolOf(cur);
+  const lines = cur.split(/\r?\n/);
+  const b = lines.indexOf(APP_BEGIN);
+  const e = lines.indexOf(APP_END);
+  if (b >= 0 && e > b) {
+    lines.splice(b, e - b + 1);
+    if (b > 0 && lines[b - 1] === '' && (lines[b] === undefined || lines[b] === '')) lines.splice(b - 1, 1);
+  }
+  const i = lines.indexOf(APP_LINE);
+  if (i >= 0) lines.splice(i, 1);
+  return lines.join(eol);
+}
+
+// ------------------------------------------------------------------ Claude Desktop (third-party inference, gateway mode)
+
+/** The file to load in Claude Desktop → Developer → Configure Third-Party Inference → Import configuration.
+ *  Keys from claude.com/docs/third-party/claude-desktop/gateway. Model ids are the paid Claude ids pocket
+ *  already maps to tiers (and passes through unchanged when an Anthropic key is set). */
+export function claudeDesktopConfig(baseUrl: string, token: string, models: string[]) {
+  return {
+    inferenceProvider: 'gateway',
+    inferenceGatewayBaseUrl: baseUrl,
+    inferenceGatewayApiKey: token,
+    inferenceGatewayAuthScheme: 'bearer',
+    inferenceModels: models,
+  };
+}
+
+export function claudeDesktopSteps(file: string, baseUrl: string): string[] {
+  return [
+    'In Claude Desktop (signed out, on the sign-in screen):',
+    '  1. Help → Troubleshooting → Enable Developer Mode',
+    '  2. Developer → Configure Third-Party Inference…',
+    `  3. Import configuration → ${file}   (or set Inference provider: Gateway, base URL ${baseUrl}, API key: your pocket token)`,
+    '  4. Apply Changes → Save & Restart, then pick the third-party option on the sign-in screen',
+    'This is Claude Desktop\'s separate "third-party" mode: it does not use your Claude account, and its chats stay on this computer.',
+    'To go back, choose the Anthropic sign-in on the sign-in screen. pocket must be running (`pocket daemon start`).',
+  ];
+}
+
 export function codexConfigPath(env: NodeJS.ProcessEnv): string {
   return path.join(env.CODEX_HOME ?? path.join(os.homedir(), '.codex'), 'config.toml');
 }
@@ -186,6 +286,9 @@ export async function cmdAttach(ctx: Ctx, args: Args): Promise<number> {
       ANTHROPIC_BASE_URL: `http://127.0.0.1:${prt}/anthropic`,
       ANTHROPIC_AUTH_TOKEN: token,
       ANTHROPIC_CUSTOM_HEADERS: `x-pocket-agent: ${agent}`,
+      // pocket can't run Anthropic's server-side auto-mode checks: say so up front instead of a notice
+      // that holds the first action (code.claude.com/docs/en/auto-mode-classifier-billing)
+      CLAUDE_CODE_AUTO_MODE_SERVER: '0',
     };
     const launcher = writeLauncher(binDir(ctx, args, p), 'claude-pocket', vars, ['ANTHROPIC_API_KEY'], 'claude', prt);
     if (!whichDir('claude', ctx.env) && !fs.existsSync(path.join(os.homedir(), '.local', 'bin', isWin() ? 'claude.exe' : 'claude'))) ctx.out(`note: ${INSTALL_HINT.claude}`);
@@ -267,7 +370,42 @@ export async function cmdAttach(ctx: Ctx, args: Args): Promise<number> {
     return 0;
   }
 
-  throw new PocketError('usage: pocket attach claude|codex|cursor [--as <agent>] [--port 3460] [--bin-dir dir] [--vscode]');
+  if (target === 'codex-app') {
+    if (att.codexApp) {
+      ctx.out(`the Codex app is already on pocket (${att.codexApp.file})`);
+      return 0;
+    }
+    const file = typeof args.flags.config === 'string' ? path.resolve(ctx.cwd, args.flags.config) : codexConfigPath(ctx.env);
+    const origBuf = fs.existsSync(file) ? fs.readFileSync(file) : null;
+    const orig = origBuf ? origBuf.toString('utf8') : null;
+    if (origBuf && Buffer.from(orig!, 'utf8').compare(origBuf) !== 0) throw new PocketError(`${file} is not UTF-8; not touching it`);
+    const text = codexAppAttachText(orig, `http://127.0.0.1:${prt}/openai/v1`, token);
+    const backup = file + '.pocket-app-backup';
+    if (origBuf) fs.writeFileSync(backup, origBuf, { mode: fs.statSync(file).mode & 0o777 });
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, text);
+    att.codexApp = { file, existed: !!origBuf, backup, after: text };
+    saveAttachments(p, att);
+    ctx.out(`set model_provider = "pocket_app" in ${file}${origBuf ? ` (backup: ${backup})` : ''}`);
+    ctx.out('Restart the Codex app. All of Codex now goes through pocket: the app and plain `codex` in a terminal.');
+    ctx.out('pocket must be running for Codex to work (`pocket daemon start`). Undo: pocket detach codex-app');
+    return 0;
+  }
+
+  if (target === 'claude-desktop') {
+    const base = `http://127.0.0.1:${prt}/desktop`;
+    const anth = loadProvidersSafe(p)?.anthropic;
+    const models = anth ? [anth.tiers.strong, anth.tiers.mid, anth.tiers.fast].filter((x, i, a) => x && a.indexOf(x) === i) : [];
+    const file = path.join(p.dir, 'claude-desktop-pocket.json');
+    writePrivate(file, JSON.stringify(claudeDesktopConfig(base, token, models), null, 2) + '\n');
+    att.claudeDesktop = { file };
+    saveAttachments(p, att);
+    ctx.out(`wrote ${file}`);
+    for (const l of claudeDesktopSteps(file, base)) ctx.out(l);
+    return 0;
+  }
+
+  throw new PocketError('usage: pocket attach claude|codex|codex-app|claude-desktop|cursor [--as <agent>] [--port 3460] [--bin-dir dir] [--vscode]');
 }
 
 export async function cmdDetach(ctx: Ctx, args: Args): Promise<number> {
@@ -293,7 +431,7 @@ export async function cmdDetach(ctx: Ctx, args: Args): Promise<number> {
         try {
           const obj = JSON.parse(cur);
           if (Array.isArray(obj[VS_KEY])) {
-            obj[VS_KEY] = obj[VS_KEY].filter((e: any) => !['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_CUSTOM_HEADERS'].includes(e?.name));
+            obj[VS_KEY] = obj[VS_KEY].filter((e: any) => !['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_CUSTOM_HEADERS', 'CLAUDE_CODE_AUTO_MODE_SERVER'].includes(e?.name));
             fs.writeFileSync(rec.vscode.file, JSON.stringify(obj, null, 4) + '\n');
             ctx.out(`removed pocket variables from ${rec.vscode.file} (it changed since attach, so it was edited, not restored)`);
           }
@@ -340,5 +478,40 @@ export async function cmdDetach(ctx: Ctx, args: Args): Promise<number> {
     return 0;
   }
 
-  throw new PocketError('usage: pocket detach claude|codex|cursor');
+  if (target === 'codex-app') {
+    const rec = att.codexApp;
+    if (!rec) {
+      ctx.out('the Codex app is not on pocket');
+      return 0;
+    }
+    const cur = readText(rec.file);
+    if (cur === rec.after) {
+      if (rec.existed) {
+        fs.copyFileSync(rec.backup, rec.file);
+        fs.rmSync(rec.backup, { force: true });
+        ctx.out(`restored ${rec.file} from ${rec.backup}`);
+      } else {
+        fs.rmSync(rec.file, { force: true });
+        ctx.out(`removed ${rec.file} (it did not exist before)`);
+      }
+    } else if (cur !== null) {
+      fs.writeFileSync(rec.file, codexAppDetachText(cur));
+      ctx.out(`${rec.file} changed since: removed only the pocket-app lines; backup kept at ${rec.backup}`);
+    }
+    delete att.codexApp;
+    saveAttachments(p, att);
+    ctx.out('Restart the Codex app; it is back on your own provider.');
+    return 0;
+  }
+
+  if (target === 'claude-desktop') {
+    const rec = att.claudeDesktop;
+    if (rec) fs.rmSync(rec.file, { force: true });
+    delete att.claudeDesktop;
+    saveAttachments(p, att);
+    ctx.out('removed the import file. In Claude Desktop, choose the Anthropic sign-in on the sign-in screen to leave third-party mode (pocket never edits the app\'s own settings).');
+    return 0;
+  }
+
+  throw new PocketError('usage: pocket detach claude|codex|codex-app|claude-desktop|cursor');
 }

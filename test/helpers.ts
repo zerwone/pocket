@@ -144,7 +144,7 @@ export interface Rig {
 }
 
 /** Daemon in-process with a memory keystore and two fake providers: anthropic (paid) → groq. */
-export async function rig(opts: { paid?: Behaviour; groq?: Behaviour; policy?: string; keys?: Record<string, string> } = {}): Promise<Rig> {
+export async function rig(opts: { paid?: Behaviour; groq?: Behaviour; policy?: string; keys?: Record<string, string>; env?: Record<string, string> } = {}): Promise<Rig> {
   const home = tmpDir();
   const paid = await fakeServer(opts.paid ?? anthropicBehaviour('hello from anthropic'));
   const groq = await fakeServer(opts.groq ?? openAIBehaviour('hello from groq'));
@@ -168,7 +168,7 @@ degraded_banner: true
   );
   const ks = memoryKeystore(opts.keys ?? { anthropic: 'sk-ant-test-PAIDKEY', groq: 'gsk_test_FREEKEY' });
   const lines: string[] = [];
-  const app = await startApp({ env: { ...process.env, POCKET_HOME: home }, port: 0, keystore: ks, log: (l) => lines.push(l) });
+  const app = await startApp({ env: { ...process.env, POCKET_HOME: home, ...(opts.env ?? {}) }, port: 0, keystore: ks, log: (l) => lines.push(l) });
   (app as any).lines = lines;
   const token = fs.readFileSync(path.join(home, 'token'), 'utf8').trim();
   return {

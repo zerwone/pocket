@@ -4,12 +4,13 @@ import { PocketError } from './config.js';
 import { cmdDaemon } from './commands/daemon.js';
 import { cmdKeys } from './commands/keys.js';
 import { cmdAttach, cmdDetach } from './commands/attach.js';
-import { cmdDash, cmdDoctor, cmdLanes, cmdModels, cmdRoute } from './commands/misc.js';
+import { cmdDash, cmdDoctor, cmdLanes, cmdModels, cmdOpen, cmdRoute } from './commands/misc.js';
 import { cmdSetup } from './commands/setup.js';
 
 export const HELP = `pocket: when your coding agent hits its usage limit, pocket moves it to your next key.
 
-  pocket setup                           start here: add free keys, connect your agents
+  pocket                                 start here: opens the setup page in your browser
+  pocket setup                           the same setup in the terminal
   pocket dash                            see quota, spend and every failover
 
 More:
@@ -19,19 +20,22 @@ More:
   pocket route ["prompt"] [--agent a]    send one test request; shows which provider served it
   pocket attach claude [--vscode]        write the claude-pocket launcher
   pocket attach codex                    add the pocket provider to ~/.codex/config.toml (with backup)
+  pocket attach codex-app                point the Codex desktop app (and all of Codex) at pocket
+  pocket attach claude-desktop           write the file Claude Desktop imports for third-party mode
   pocket attach cursor                   print the settings to paste into Cursor
-  pocket detach claude|codex|cursor      undo attach; configs return byte-identical
+  pocket detach <app>                    undo attach; configs return byte-identical
   pocket doctor [--offline]              keychain, port, keys, stale limits, attached-but-down
   pocket models [--refresh]              which model each provider will use, from its live list
   pocket staked sync [--repo path]       per-agent routing from a staked roles.yml provider_policy
 
-Providers: groq cerebras nvidia openrouter mistral anthropic openai (+ custom in providers.json)
+Providers: groq cerebras nvidia openrouter mistral gemini zai anthropic openai (+ custom in providers.json)
 Fallback models are weaker than the paid one. pocket says so in the session; it never hides it.
 `;
 
 type Cmd = (ctx: Ctx, args: Args) => Promise<number>;
 
 const TABLE: Record<string, Cmd> = {
+  open: cmdOpen,
   setup: (c, a) => cmdSetup(c, a),
   daemon: cmdDaemon,
   keys: (c, a) => cmdKeys(c, a),
@@ -59,9 +63,18 @@ export async function run(argv: string[], ctx: Ctx = defaultCtx()): Promise<numb
     ctx.out(pkg.version);
     return 0;
   }
-  if (!cmd || cmd === 'help' || args.flags.help) {
+  if (cmd === 'help' || args.flags.help) {
     ctx.out(HELP);
     return 0;
+  }
+  if (!cmd) {
+    // no arguments: the one command a new user runs. Opens the setup page (help: `pocket help`).
+    try {
+      return await cmdOpen(ctx, { _: [], flags: args.flags });
+    } catch (e: any) {
+      ctx.err(`pocket: ${e?.message ?? e}`);
+      return 1;
+    }
   }
   const fn = TABLE[cmd];
   if (!fn) {

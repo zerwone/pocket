@@ -6,15 +6,24 @@ import { Keystore } from '../keystore.js';
 import { cmdKeys } from './keys.js';
 import { cmdDaemon } from './daemon.js';
 import { cmdAttach, readAttachments } from './attach.js';
-import { paths } from '../config.js';
+import { paths, Paths } from '../config.js';
+import { loadProviders, Provider } from '../providers.js';
+import { loadPolicy } from '../policy.js';
 
-/** Free providers offered during setup, in the default fallback order, with where to get a key. */
-export const SETUP_PROVIDERS: { id: string; label: string; url: string; note: string }[] = [
-  { id: 'groq', label: 'Groq', url: 'https://console.groq.com/keys', note: 'fastest; 1,000 requests/day' },
-  { id: 'nvidia', label: 'NVIDIA', url: 'https://build.nvidia.com', note: '~40 requests/min; phone verification' },
-  { id: 'openrouter', label: 'OpenRouter', url: 'https://openrouter.ai/settings/keys', note: '50 requests/day free' },
-  { id: 'cerebras', label: 'Cerebras', url: 'https://cloud.cerebras.ai', note: '1M tokens/day, 5 requests/min' },
-];
+/** Free providers offered during setup: the default order's free providers, from providers.json. */
+export function setupProviders(p: Paths): { id: string; label: string; url: string; note: string }[] {
+  const providers = loadProviders(p);
+  let order: string[];
+  try {
+    order = loadPolicy(p).order;
+  } catch {
+    order = Object.keys(providers);
+  }
+  return order
+    .map((id) => providers[id])
+    .filter((x): x is Provider => !!x && !x.paid && !!x.signup)
+    .map((x) => ({ id: x.id, label: x.label ?? x.id, url: x.signup!, note: x.setup_note ?? '' }));
+}
 
 /** The PATH directory holding executable `name`, or null. */
 export function whichDir(name: string, env: NodeJS.ProcessEnv): string | null {
@@ -58,7 +67,7 @@ export async function cmdSetup(ctx: Ctx, args: Args, ksOverride?: Keystore): Pro
   // 2. free keys
   ctx.out('\nStep 1 of 3: free keys. Add at least one. Press Enter to skip any.\n');
   let added = 0;
-  for (const p of SETUP_PROVIDERS) {
+  for (const p of setupProviders(paths(ctx.env))) {
     ctx.out(`${p.label} (${p.note})\n  get a key: ${p.url}`);
     const key = (await ctx.readSecret(`  paste ${p.label} key: `)).trim();
     if (!key) {

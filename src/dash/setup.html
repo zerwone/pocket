@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pocket setup</title>
+<style>
+  :root { --bg:#fbfbfa; --card:#ffffff; --fg:#1d1d1b; --muted:#6b6b66; --line:#e3e2de; --ok:#2f7d4f; --warn:#9a5c00; --bad:#b3261e; --accent:#2457d6; --accent-fg:#fff; --soft:#f2f1ee; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151514; --card:#1c1c1a; --fg:#ecebe7; --muted:#9a9993; --line:#2c2b29; --ok:#5fbf86; --warn:#e3a33b; --bad:#ef6b62; --accent:#7aa2f7; --accent-fg:#0d1117; --soft:#232321; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+  header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom: 8px; }
+  header h1 { font-size:22px; margin:0; }
+  header nav { margin-left:auto; display:flex; gap:14px; }
+  a { color: var(--accent); }
+  h2 { font-size:17px; margin:34px 0 4px; display:flex; align-items:center; gap:10px; }
+  h2 .n { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--accent); color:var(--accent-fg); font-size:13px; align-items:center; justify-content:center; flex:none; }
+  .lead { color:var(--muted); margin:0 0 14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:10px 0; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .grow { flex:1 1 220px; min-width:0; }
+  .title { font-weight:600; }
+  .muted { color:var(--muted); font-size:13px; }
+  .notice { font-size:13px; color:var(--warn); margin-top:8px; }
+  input[type=password], input[type=text] { font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:7px; background:var(--bg); color:var(--fg); width:100%; }
+  button { font:inherit; padding:7px 14px; border-radius:7px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-fg); cursor:pointer; white-space:nowrap; }
+  button.ghost { background:transparent; color:var(--accent); }
+  button.quiet { background:transparent; color:var(--muted); border-color:var(--line); }
+  button:disabled { opacity:.55; cursor:default; }
+  .pill { display:inline-block; padding:1px 9px; border-radius:999px; font-size:12px; border:1px solid var(--line); white-space:nowrap; }
+  .pill.ok { color:var(--ok); border-color:var(--ok); } .pill.warn { color:var(--warn); border-color:var(--warn); } .pill.bad { color:var(--bad); border-color:var(--bad); }
+  .msg { font-size:13px; margin-top:8px; white-space:pre-wrap; }
+  .msg.ok { color:var(--ok); } .msg.bad { color:var(--bad); }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; }
+  pre { background:var(--soft); border-radius:7px; padding:10px 12px; overflow-x:auto; margin:8px 0 0; white-space:pre-wrap; word-break:break-all; }
+  .run { font-size:14px; background:var(--soft); padding:6px 10px; border-radius:7px; display:inline-block; margin-top:8px; }
+  details summary { cursor:pointer; color:var(--muted); margin:12px 0 4px; }
+  ol.steps { margin:8px 0 0; padding-left:20px; } ol.steps li { margin:3px 0; }
+  .banner { border:1px solid var(--warn); border-radius:10px; padding:12px 14px; margin:12px 0; }
+  label.check { display:flex; gap:8px; align-items:flex-start; font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>pocket</h1>
+    <span id="status" class="pill">loading…</span>
+    <nav><a href="/setup">Setup</a><a href="/dash">Dashboard</a></nav>
+  </header>
+  <p class="lead">When your coding agent hits its usage limit, pocket moves it to your next key. Free models are weaker than the paid ones; pocket says so in the session when it switches.</p>
+
+  <div id="npx" class="banner" hidden>
+    <div class="title">You started pocket with npx</div>
+    <div class="muted">npx keeps pocket in a temporary folder. Install it so <code>claude-pocket</code> and <code>codex-pocket</code> keep working after that folder is cleaned.</div>
+    <div class="row" style="margin-top:8px"><button id="install">Install pocket</button><span id="installMsg" class="msg"></span></div>
+  </div>
+
+  <h2><span class="n">1</span>Add free keys</h2>
+  <p class="lead">Add at least one. Each is free to sign up for. Keys go to your OS keychain (<span id="keychain"></span>) and never back to this page.</p>
+  <div id="free"></div>
+  <details id="moreWrap"><summary>More free providers (read the note on each)</summary><div id="more"></div></details>
+  <details><summary>Paid keys (optional)</summary><div id="paid"></div></details>
+
+  <h2><span class="n">2</span>Connect your apps</h2>
+  <p class="lead">Each one is undone with one click. pocket keeps a backup of any file it changes.</p>
+  <div id="apps"></div>
+
+  <h2><span class="n">3</span>Check it works</h2>
+  <div class="card">
+    <div class="row"><div class="grow">Send one short request through pocket and see which provider answered.</div><button id="test">Send test</button></div>
+    <div id="testMsg" class="msg"></div>
+  </div>
+  <p class="muted">pocket runs only on this computer (127.0.0.1). Close this page any time; pocket keeps running. Open it again with <code>pocket</code>.</p>
+</main>
+<script src="/setup/setup.js"></script>
+</body>
+</html>

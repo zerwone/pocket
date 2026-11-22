@@ -16,6 +16,9 @@ export interface Limits {
 
 export interface Provider {
   id: string;
+  label?: string; // shown in setup
+  signup?: string; // where to get a key
+  setup_note?: string; // one line about the free tier
   base_url: string;
   format: Format;
   paid: boolean;
@@ -25,7 +28,8 @@ export interface Provider {
   notice?: string; // shown on `keys add` and in the dashboard (e.g. data-use terms)
   passthrough?: string; // model-name prefix sent unchanged, e.g. "claude-"
   tiers: Record<Tier, string>;
-  max_tokens?: number; // cap on max_tokens sent upstream (Claude Code asks for more than most open models allow)
+  max_tokens?: number;
+  free_models?: string; // regex: only live models whose id matches are used (the rest need a paid balance) // cap on max_tokens sent upstream (Claude Code asks for more than most open models allow)
   price_per_mtok?: Partial<Record<Tier, { input: number; output: number }>>;
 }
 

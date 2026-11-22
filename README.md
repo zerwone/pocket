@@ -51,7 +51,7 @@ claude-pocket ──► pocket (127.0.0.1:3460, on your machine)
 
 - **Node.js 20 or newer** ([nodejs.org](https://nodejs.org))
 - **Claude Code** ([install](https://code.claude.com/docs/en/setup)) and/or **Codex CLI** (`npm i -g @openai/codex`)
-- **At least one API key.** Free keys are fine; `pocket setup` links you to each signup page.
+- **At least one API key.** Free keys are fine; the setup page links you to each signup page.
 
 ## Install
 
@@ -68,10 +68,16 @@ Package: [npmjs.com/package/@zerwone/pocket](https://www.npmjs.com/package/@zerw
 **1. Set it up once**
 
 ```sh
-pocket setup
+pocket
 ```
 
-It finds Claude Code and Codex on your machine, walks you through free keys from Groq, NVIDIA, OpenRouter and Cerebras (with the signup link for each; skip any you don't want), optionally adds your paid key (used first, up to $10 a day), and connects your agents. A couple of minutes if your keys are ready.
+That's the one command. It starts pocket and opens a setup page in your browser where you:
+
+- paste free keys (each card has the signup link; keys go to your OS keychain, never to the page)
+- connect your apps with one click each: Claude Code, Codex CLI, the Codex desktop app, Claude Desktop, Cursor
+- send a test request and see which provider answered
+
+Prefer the terminal? `pocket setup` does the same steps there.
 
 **2. Start your agent through pocket**, from your project folder:
 
@@ -120,6 +126,12 @@ pocket detach codex
 
 Your files are the same; the conversation is not. To hand over cleanly, ask Claude for a short note (what we're building, what's done, what's next) and save it as `CLAUDE.md` in the project. Claude Code reads it when it starts.
 
+### Desktop apps
+
+**Codex app.** Connect "Codex app (desktop)" on the setup page, or `pocket attach codex-app`, then restart the app. This sets Codex's provider to pocket for all of Codex: the app and plain `codex` in a terminal. pocket has to be running while it's on. `pocket detach codex-app` puts your config back byte for byte.
+
+**Claude Desktop.** Claude Desktop can run on your own gateway in its separate third-party mode (Help → Troubleshooting → Enable Developer Mode, then Developer → Configure Third-Party Inference). Connect "Claude Desktop" on the setup page, or `pocket attach claude-desktop`, and import the file it gives you there. That mode doesn't use your Claude account and keeps its chats on your computer; to go back, pick the Anthropic sign-in on the sign-in screen. pocket follows [Anthropic's gateway docs](https://claude.com/docs/third-party/claude-desktop/gateway) for this; it has not yet been tried in a real install with a local `http://127.0.0.1` gateway, so tell us if the app's connection test fails.
+
 ## How much free do you get
 
 | Provider | Free per key | Get a key |
@@ -129,20 +141,29 @@ Your files are the same; the conversation is not. To hand over cleanly, ask Clau
 | OpenRouter | 50 requests/day (1,000 after a one-time $10 top-up) | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
 | Cerebras | 1M tokens/day, 5 requests/min | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 
-Checked against each provider's docs on 2026-11-08. Mistral (1B tokens/month) is supported but off by default, because its free plan may use your requests for training.
+Checked against each provider's docs on 2026-11-08. Three more are supported but off until you turn them on in setup, because of how they treat your data:
+
+| Provider | Free | Why it's off by default |
+| --- | --- | --- |
+| Mistral | 1B tokens/month | free plan requests may train Mistral's models |
+| Google Gemini | per-model quota, shown in AI Studio | free-tier prompts may be used to improve Google's products and read by reviewers (outside the EEA, Switzerland, UK) ([terms](https://ai.google.dev/gemini-api/terms)) |
+| Z.ai | GLM-4.7-Flash, GLM-4.5-Flash ([pricing](https://docs.z.ai/guides/overview/pricing.md)) | pocket hasn't verified its data terms |
+
+Not added, after checking: GitHub Models (retired July 2026), Hugging Face (no free credits for free accounts), Ollama Cloud (no free plan), SambaNova (20 requests/day), and resellers whose terms or ownership pocket can't check. pocket sends your code to these services, so it only lists ones you can look up.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `pocket setup` | First run, or add more keys later |
+| `pocket` | Start here: opens the setup page in your browser |
+| `pocket setup` | The same setup in the terminal |
 | `claude-pocket` / `codex-pocket` | Run Claude Code / Codex through pocket |
 | `pocket dash` | Dashboard: quota, spend, switches |
 | `pocket models [--refresh]` | Which model each provider will use, from its live list |
 | `pocket doctor` | Checks keychain, daemon, every key, attached agents |
 | `pocket keys add <provider>` | Add or replace one key |
-| `pocket attach claude` / `codex` | Create the launcher (setup does this for you) |
-| `pocket detach claude` / `codex` | Undo attach, byte for byte |
+| `pocket attach claude` / `codex` / `codex-app` / `claude-desktop` | Connect an app (the setup page does this for you) |
+| `pocket detach <app>` | Undo attach, byte for byte |
 | `pocket daemon start` / `stop` / `logs` | The local router (launchers start it for you) |
 
 Full list, routing rules and provider details: [docs/REFERENCE.md](docs/REFERENCE.md)

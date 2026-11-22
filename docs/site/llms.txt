@@ -4,7 +4,7 @@
 
 Key facts:
 - Bring your own keys only. No pooled or shared keys, no pocket account, no telemetry. Requests go to the provider the user configured.
-- Setup: `npm i -g @zerwone/pocket`, `pocket setup`, then run `claude-pocket` instead of `claude` (or `codex-pocket` instead of `codex`).
+- Setup: `npm i -g @zerwone/pocket`, `pocket` (opens a setup page in the browser; `pocket setup` does it in the terminal), then run `claude-pocket` instead of `claude` (or `codex-pocket` instead of `codex`).
 - Fallback models are usually weaker than the paid model; free tiers have their own limits; when every key is spent the agent stops.
 - Claude Pro/Max subscription logins are not routed through pocket; `claude-pocket` uses API keys.
 - Cursor: chat with a custom key only, not Agent or Composer.

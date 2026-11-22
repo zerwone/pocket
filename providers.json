@@ -1,7 +1,10 @@
 {
-  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
+  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). gemini and zai added 2026-11-22 from their docs. Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
   "providers": {
     "groq": {
+      "label": "Groq",
+      "signup": "https://console.groq.com/keys",
+      "setup_note": "fastest; about 1,000 requests a day",
       "base_url": "https://api.groq.com/openai/v1",
       "format": "openai",
       "paid": false,
@@ -19,6 +22,9 @@
       }
     },
     "cerebras": {
+      "label": "Cerebras",
+      "signup": "https://cloud.cerebras.ai",
+      "setup_note": "1M tokens a day, 5 requests a minute",
       "base_url": "https://api.cerebras.ai/v1",
       "format": "openai",
       "paid": false,
@@ -35,6 +41,9 @@
       }
     },
     "nvidia": {
+      "label": "NVIDIA",
+      "signup": "https://build.nvidia.com",
+      "setup_note": "about 40 requests a minute; phone verification",
       "base_url": "https://integrate.api.nvidia.com/v1",
       "format": "openai",
       "paid": false,
@@ -50,6 +59,9 @@
       }
     },
     "openrouter": {
+      "label": "OpenRouter",
+      "signup": "https://openrouter.ai/settings/keys",
+      "setup_note": "50 requests a day on free models",
       "base_url": "https://openrouter.ai/api/v1",
       "format": "openai",
       "paid": false,
@@ -66,6 +78,9 @@
       }
     },
     "mistral": {
+      "label": "Mistral",
+      "signup": "https://console.mistral.ai/api-keys",
+      "setup_note": "1B tokens a month; phone verification",
       "base_url": "https://api.mistral.ai/v1",
       "format": "openai",
       "paid": false,
@@ -82,7 +97,45 @@
       },
       "notice": "Requests on Mistral's free Experiment plan may be used to train Mistral's models. Not in the default order; add it to pocket.yml yourself if that is acceptable."
     },
+    "gemini": {
+      "label": "Google Gemini",
+      "signup": "https://aistudio.google.com/apikey",
+      "setup_note": "free quota per model; see AI Studio",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "format": "openai",
+      "paid": false,
+      "limits": {},
+      "verified_on": "2026-11-22",
+      "source": "OpenAI-compatible endpoint: https://ai.google.dev/gemini-api/docs/openai. Free-tier limits are per model and shown only in Google AI Studio (https://ai.google.dev/gemini-api/docs/rate-limits); models with no free quota answer 429 'limit: 0' and pocket drops them for 24h.",
+      "tiers": {
+        "strong": "gemini-3.8-flash",
+        "mid": "gemini-3.8-flash",
+        "fast": "gemini-3.8-flash"
+      },
+      "notice": "On the free tier Google may use your prompts and code to improve its products, and human reviewers may read them (outside the EEA, Switzerland and the UK). https://ai.google.dev/gemini-api/terms. Not in the default order; add it if that is acceptable."
+    },
+    "zai": {
+      "label": "Z.ai (GLM)",
+      "signup": "https://z.ai/manage-apikey/apikey-list",
+      "setup_note": "GLM-4.7-Flash and GLM-4.5-Flash are free",
+      "base_url": "https://api.z.ai/api/paas/v4",
+      "format": "openai",
+      "paid": false,
+      "limits": {},
+      "verified_on": "2026-11-22",
+      "source": "GLM-4.7-Flash and GLM-4.5-Flash are free per https://docs.z.ai/guides/overview/pricing.md; base URL from https://docs.z.ai/guides/overview/quick-start.md. Rate limits are not published outside the Z.ai console.",
+      "free_models": "-flash$",
+      "tiers": {
+        "strong": "glm-4.7-flash",
+        "mid": "glm-4.7-flash",
+        "fast": "glm-4.5-flash"
+      },
+      "notice": "pocket has not verified how Z.ai (Zhipu) handles data sent to its free models. Not in the default order; add it if that is acceptable."
+    },
     "anthropic": {
+      "label": "Anthropic",
+      "signup": "https://console.anthropic.com/settings/keys",
+      "setup_note": "paid; used first, up to the daily cap",
       "base_url": "https://api.anthropic.com",
       "format": "anthropic",
       "paid": true,
@@ -112,6 +165,9 @@
       "images": true
     },
     "openai": {
+      "label": "OpenAI",
+      "signup": "https://platform.openai.com/api-keys",
+      "setup_note": "paid; off by default (cap 0)",
       "base_url": "https://api.openai.com/v1",
       "format": "openai",
       "paid": true,

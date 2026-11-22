@@ -94,3 +94,42 @@ export function effective(pol: Policy, agent: string | null): { order: string[];
     },
   };
 }
+
+/** Pure: pocket.yml text with `id` added to (on) or removed from (off) the top-level order list.
+ *  A text edit so the user's comments stay; refuses anything it can't do cleanly. */
+export function orderEdit(text: string, id: string, on: boolean): string {
+  if (!/^[a-z0-9_-]+$/i.test(id)) throw new PocketError(`bad provider id "${id}"`);
+  const before = parsePolicy(text);
+  if (on === before.order.includes(id)) return text;
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((l) => /^order:\s*(#.*)?$/.test(l));
+  if (start < 0) throw new PocketError('pocket.yml: `order` is not a plain list; edit it by hand');
+  let end = start + 1;
+  let lastItem = -1;
+  while (end < lines.length && (/^\s+(-|#)/.test(lines[end]) || lines[end].trim() === '')) {
+    if (/^\s+-\s/.test(lines[end])) lastItem = end;
+    end++;
+  }
+  if (on) {
+    // a commented-out "# - id" line: uncomment it in place
+    const commented = lines.findIndex((l, i) => i > start && i < end && new RegExp(`^(\\s+)#\\s*-\\s+${id}\\b`).test(l));
+    if (commented >= 0) lines[commented] = lines[commented].replace(/^(\s+)#\s*-\s+/, '$1- ');
+    else lines.splice(lastItem >= 0 ? lastItem + 1 : start + 1, 0, `  - ${id}`);
+  } else {
+    const i = lines.findIndex((l, j) => j > start && j < end && new RegExp(`^\\s+-\\s+${id}\\s*(#.*)?$`).test(l));
+    if (i < 0) throw new PocketError(`pocket.yml: could not find "${id}" in the order list; edit it by hand`);
+    lines.splice(i, 1);
+  }
+  const out = lines.join(eol);
+  const after = parsePolicy(out);
+  if (on !== after.order.includes(id)) throw new PocketError('pocket.yml: edit did not take; edit it by hand');
+  return out;
+}
+
+export function setInOrder(p: Paths, id: string, on: boolean) {
+  loadPolicy(p); // creates the default file if missing
+  const text = readText(p.policy)!;
+  const out = orderEdit(text, id, on);
+  if (out !== text) writePrivate(p.policy, out);
+}

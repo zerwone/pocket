@@ -154,7 +154,7 @@ describe('attach claude / detach claude', () => {
     await pocket(['attach', 'claude', '--vscode', '--vscode-settings', vs, '--bin-dir', path.join(home, 'bin')], env);
     const s = JSON.parse(fs.readFileSync(vs, 'utf8'));
     expect(s['editor.fontSize']).toBe(14);
-    expect(s['claudeCode.environmentVariables'].map((e: any) => e.name)).toEqual(['FOO', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_CUSTOM_HEADERS']);
+    expect(s['claudeCode.environmentVariables'].map((e: any) => e.name)).toEqual(['FOO', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_CUSTOM_HEADERS', 'CLAUDE_CODE_AUTO_MODE_SERVER']);
     await pocket(['detach', 'claude'], env);
     expect(fs.readFileSync(vs, 'utf8')).toBe(original);
   });

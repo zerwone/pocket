@@ -9,6 +9,7 @@ import { Policy } from './policy.js';
 import { Provider } from './providers.js';
 import { route, RouterDeps, sendJson } from './router.js';
 import { State } from './state.js';
+import { sameOrigin, setupApi, SetupDeps } from './setupapi.js';
 
 export interface ServerDeps extends RouterDeps {
   token: string;
@@ -16,6 +17,7 @@ export interface ServerDeps extends RouterDeps {
   keyStatus: () => Record<string, { has_key: boolean; verified_on: string | null }>;
   reloadKeys: () => void;
   keystoreName: string;
+  setup?: SetupDeps;
 }
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
@@ -89,6 +91,7 @@ export function snapshot(deps: ServerDeps) {
       limits_verified_on: p.verified_on,
       notice: p.notice ?? null,
       used: { rpm: u.window.length, rpd: u.reqDay, tpd: u.tokDay, tpmonth: u.tokMonth },
+      live: u.live ?? null,
       spend_usd: p.paid ? Number(u.spendDay.toFixed(4)) : undefined,
       cap_usd: p.paid ? cap : undefined,
       resets_at: new Date(nextReset(now)).toISOString(),
@@ -98,6 +101,24 @@ export function snapshot(deps: ServerDeps) {
     };
   }
   out.degraded = Object.values(deps.state.agents).some((a: any) => a.degraded);
+  return out;
+}
+
+const FAMILY: Record<string, string> = { strong: 'opus', mid: 'sonnet', fast: 'haiku' };
+
+/** Model ids agents may pick from: the paid providers' tier models (pocket maps any of them to a tier). */
+export function modelList(providers: Record<string, Provider>): { id: string; family?: string }[] {
+  const out: { id: string; family?: string }[] = [];
+  const seen = new Set<string>();
+  for (const p of Object.values(providers)) {
+    if (!p.passthrough) continue;
+    for (const tier of ['strong', 'mid', 'fast'] as const) {
+      const id = p.tiers[tier];
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push({ id, family: id.startsWith('claude-') ? FAMILY[tier] : undefined });
+    }
+  }
   return out;
 }
 
@@ -117,6 +138,14 @@ export function createServer(deps: ServerDeps): http.Server {
       pathAgent = pa[1];
       pathname = pa[2];
     }
+    // Claude Desktop (third-party inference, gateway mode): base URL http://127.0.0.1:<port>/desktop.
+    // Whatever it appends (/v1/messages, /messages, /v1/models) lands on the Anthropic routes.
+    let desktop = false;
+    if (pathname === '/desktop' || pathname.startsWith('/desktop/')) {
+      desktop = true;
+      pathname = '/anthropic/v1' + (pathname.slice('/desktop'.length).replace(/^(\/v1)+/, '') || '/');
+      pathname = pathname.replace(/\/+$/, '') || '/';
+    }
     try {
       if (pathname === '/healthz') {
         return sendJson(res, 200, { ok: true, port: deps.port, keychain: deps.keystoreName, providers: deps.keyStatus() });
@@ -127,7 +156,7 @@ export function createServer(deps: ServerDeps): http.Server {
         return sendJson(res, 401, { error: { message: '[pocket] missing or wrong local token', type: 'invalid_api_key', code: 401 } });
       }
       const agentH = req.headers['x-pocket-agent'];
-      const agent = typeof agentH === 'string' && agentH.trim() ? agentH.trim() : pathAgent;
+      const agent = typeof agentH === 'string' && agentH.trim() ? agentH.trim() : (pathAgent ?? (desktop ? 'claude-desktop' : null));
 
       if (req.method === 'POST' && pathname === '/anthropic/v1/messages') {
         return await route(deps, { format: 'anthropic', body: await readBody(req), agent, headers: req.headers }, res);
@@ -145,9 +174,12 @@ export function createServer(deps: ServerDeps): http.Server {
         return await route(deps, { format: 'responses', body: await readBody(req), agent, headers: req.headers }, res);
       }
       if (req.method === 'GET' && (pathname === '/openai/v1/models' || pathname === '/anthropic/v1/models')) {
-        const ids = ['claude-opus-4-1', 'claude-sonnet-4-5', 'claude-haiku-4-5', 'gpt-4.1', 'gpt-4.1-mini'];
-        if (pathname.startsWith('/openai')) return sendJson(res, 200, { object: 'list', data: ids.map((id) => ({ id, object: 'model', owned_by: 'pocket' })) });
-        return sendJson(res, 200, { data: ids.map((id) => ({ id, type: 'model', display_name: id })), has_more: false });
+        const list = modelList(deps.providers());
+        if (pathname.startsWith('/openai')) return sendJson(res, 200, { object: 'list', data: list.map((m) => ({ id: m.id, object: 'model', owned_by: 'pocket' })) });
+        return sendJson(res, 200, {
+          data: list.filter((m) => m.family).map((m) => ({ id: m.id, type: 'model', display_name: m.id, anthropic_family_tier: m.family, is_family_default: true })),
+          has_more: false,
+        });
       }
       if (req.method === 'POST' && pathname === '/admin/reload') {
         deps.reloadKeys();
@@ -166,8 +198,24 @@ export function createServer(deps: ServerDeps): http.Server {
         });
         return;
       }
-      if (req.method === 'GET' && (pathname === '/dash' || pathname === '/dash/dash.js' || pathname === '/dash/dash.css')) {
-        const file = pathname === '/dash' ? 'index.html' : path.basename(pathname);
+      if (pathname.startsWith('/setup/api/')) {
+        if (!deps.setup) return sendJson(res, 404, { error: { message: 'setup is not available here' } });
+        const method = req.method ?? 'GET';
+        if (method !== 'GET' && !sameOrigin(req, deps.port)) return sendJson(res, 403, { error: { message: '[pocket] setup changes must come from the setup page' } });
+        const body = method === 'GET' || method === 'DELETE' ? {} : await readBody(req, 1024 * 1024);
+        try {
+          return sendJson(res, 200, await setupApi(deps.setup, method, pathname.slice('/setup/api/'.length), body));
+        } catch (e: any) {
+          if (e instanceof PocketError) return sendJson(res, e.code >= 400 ? e.code : 400, { ok: false, message: e.message });
+          throw e;
+        }
+      }
+      if (req.method === 'GET' && pathname === '/') {
+        res.writeHead(302, { location: '/setup' });
+        return res.end();
+      }
+      if (req.method === 'GET' && (pathname === '/dash' || pathname === '/dash/dash.js' || pathname === '/dash/dash.css' || pathname === '/setup' || pathname === '/setup/setup.js')) {
+        const file = pathname === '/dash' ? 'index.html' : pathname === '/setup' ? 'setup.html' : path.basename(pathname);
         const type = file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html';
         const body = fs.readFileSync(path.join(dashDir(), file));
         // the cookie lets the page's own fetch/EventSource calls authenticate after ?token=

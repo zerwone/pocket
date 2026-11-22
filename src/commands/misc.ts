@@ -10,7 +10,7 @@ import { loadPolicy } from '../policy.js';
 import { loadProviders } from '../providers.js';
 import { parse } from '../yaml.js';
 import { readAttachments } from './attach.js';
-import { readPid, running } from './daemon.js';
+import { cmdDaemon, readPid, running } from './daemon.js';
 import { verifyKey } from './keys.js';
 
 // ------------------------------------------------------------------ doctor
@@ -141,21 +141,37 @@ export async function cmdLanes(ctx: Ctx, args: Args): Promise<number> {
 
 // ------------------------------------------------------------------ dash
 
+function openBrowser(ctx: Ctx, url: string) {
+  const cmd = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
+  try {
+    const c = spawn(cmd[0] as string, cmd[1] as string[], { detached: true, stdio: 'ignore', windowsHide: true });
+    c.on('error', () => ctx.err('could not open a browser; open the URL above'));
+    c.unref();
+  } catch {
+    ctx.err('could not open a browser; open the URL above');
+  }
+}
+
 export async function cmdDash(ctx: Ctx, args: Args): Promise<number> {
   const p = paths(ctx.env);
   const run = await running(ctx.env);
   if (!run) throw new PocketError('daemon is not running: `pocket daemon start`');
   const url = `http://127.0.0.1:${run.port}/dash?token=${encodeURIComponent(localToken(p))}`;
   ctx.out(url);
-  if (args.flags['no-open']) return 0;
-  const cmd = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
-  try {
-    const c = spawn(cmd[0] as string, cmd[1] as string[], { detached: true, stdio: 'ignore' });
-    c.on('error', () => ctx.err('could not open a browser; open the URL above'));
-    c.unref();
-  } catch {
-    ctx.err('could not open a browser; open the URL above');
-  }
+  if (!args.flags['no-open']) openBrowser(ctx, url);
+  return 0;
+}
+
+/** `pocket` with no arguments: start the router and open the setup page in the browser. */
+export async function cmdOpen(ctx: Ctx, args: Args): Promise<number> {
+  const p = paths(ctx.env);
+  await cmdDaemon(ctx, { _: ['start'], flags: args.flags });
+  const run = await running(ctx.env);
+  if (!run) throw new PocketError('daemon is not running: `pocket daemon start`');
+  const url = `http://127.0.0.1:${run.port}/setup?token=${encodeURIComponent(localToken(p))}`;
+  ctx.out(`pocket setup: ${url}`);
+  ctx.out('Opening it in your browser. Leave this page open while you set up; pocket keeps running after you close it.');
+  if (!args.flags['no-open']) openBrowser(ctx, url);
   return 0;
 }
 

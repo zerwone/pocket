@@ -1,5 +1,5 @@
 import type { ServerResponse } from 'node:http';
-import { costUsd, retryAfterMs } from './meter.js';
+import { costUsd, quotaFromHeaders, resetFrom, retryAfterMs } from './meter.js';
 import { effective, Policy } from './policy.js';
 import { modelFor, Provider, Tier } from './providers.js';
 import { SseParser, sse } from './sse.js';
@@ -131,9 +131,10 @@ async function attempt(
     const text = await up.text().catch(() => '');
     const at = deps.now();
     const kind = up.status === 429 ? '429' : up.status >= 500 ? '5xx' : '4xx';
-    throw new AttemptFailed({ kind, status: up.status, detail: `${up.status} ${text.slice(0, 200)}`, retryAfter: retryAfterMs(up.headers.get('retry-after'), at), at });
+    throw new AttemptFailed({ kind, status: up.status, detail: `${up.status} ${text.slice(0, 800)}`, retryAfter: retryAfterMs(up.headers.get('retry-after'), at) ?? resetFrom(quotaFromHeaders((n) => up.headers.get(n), at)), at });
   }
 
+  deps.state.meter.observe(p.id, quotaFromHeaders((n) => up.headers.get(n), deps.now()), deps.now());
   const outHeaders = { 'x-pocket-provider': p.id, 'x-pocket-model': model };
 
   if (!stream) {
@@ -374,8 +375,14 @@ export async function route(deps: RouterDeps, inb: Inbound, res: ServerResponse)
           if (!enabled) {
             return sendJson(res, f.status ?? 502, errorBody(fmt, f.status ?? 502, `[pocket] ${id}: ${f.detail}`));
           }
+          if (f.kind === '429' && deps.catalog && !passthru && isModelGone(f.status, f.detail)) {
+            // quota 0 for this model only (no free tier): the provider still has other models
+            deps.catalog.markBad(p, model, key, f.detail);
+            nextModel = true;
+            break;
+          }
           if (f.kind === '429') {
-            deps.state.meter.rateLimited(id, deps.now(), f.retryAfter ?? pol.failover.cooldown_seconds * 1000);
+            deps.state.meter.rateLimited(id, deps.now(), f.retryAfter ?? pol.failover.cooldown_seconds * 1000, f.retryAfter != null);
             failures.push({ id, f });
             providerDone = true;
             break; // never hammer a provider that said 429
