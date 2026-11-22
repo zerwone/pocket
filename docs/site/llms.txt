@@ -7,8 +7,16 @@ Key facts:
 - Setup: `npm i -g @zerwone/pocket`, `pocket` (opens a setup page in the browser; `pocket setup` does it in the terminal), then run `claude-pocket` instead of `claude` (or `codex-pocket` instead of `codex`).
 - Fallback models are usually weaker than the paid model; free tiers have their own limits; when every key is spent the agent stops.
 - Claude Pro/Max subscription logins are not routed through pocket; `claude-pocket` uses API keys.
+- Desktop apps: Codex app (`pocket attach codex-app`) and Claude Desktop third-party gateway mode (`pocket attach claude-desktop`).
 - Cursor: chat with a custom key only, not Agent or Composer.
 - Do not run `npx pocket`: that npm name belongs to an unrelated package.
+
+## Guides
+
+- [Claude Code usage limit reached: how to keep working](https://zerwone.github.io/pocket/claude-code-usage-limit/)
+- [Codex usage limit: keep Codex working on your next key](https://zerwone.github.io/pocket/codex-usage-limit/)
+- [Claude Code with free models](https://zerwone.github.io/pocket/claude-code-free-models/)
+- [Claude Desktop on your own API keys](https://zerwone.github.io/pocket/claude-desktop-own-api-keys/)
 
 ## Docs
 

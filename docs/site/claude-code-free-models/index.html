@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Use Claude Code with free models: Groq, NVIDIA, OpenRouter</title>
+<meta name="description" content="Run Claude Code on free API keys from Groq, NVIDIA and OpenRouter as a fallback. pocket stores keys in your OS keychain and picks a live model for you.">
+<link rel="canonical" href="https://zerwone.github.io/pocket/claude-code-free-models/">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="pocket">
+<meta property="og:title" content="Use Claude Code with free models: Groq, NVIDIA, OpenRouter">
+<meta property="og:description" content="Run Claude Code on free API keys from Groq, NVIDIA and OpenRouter as a fallback. pocket stores keys in your OS keychain and picks a live model for you.">
+<meta property="og:url" content="https://zerwone.github.io/pocket/claude-code-free-models/">
+<meta property="og:image" content="https://zerwone.github.io/pocket/social.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.ico" sizes="48x48">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "Claude Code with free models, as a fallback",
+      "description": "Run Claude Code on free API keys from Groq, NVIDIA and OpenRouter as a fallback. pocket stores keys in your OS keychain and picks a live model for you.",
+      "url": "https://zerwone.github.io/pocket/claude-code-free-models/",
+      "dateModified": "2026-11-22",
+      "author": {
+        "@type": "Person",
+        "name": "Mohamad Aljadaan"
+      },
+      "about": {
+        "@id": "https://zerwone.github.io/pocket/#app"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "pocket",
+          "item": "https://zerwone.github.io/pocket/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Claude Code with free models, as a fallback",
+          "item": "https://zerwone.github.io/pocket/claude-code-free-models/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is Claude Code free with these models?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Claude Code itself is free to install; the models answer on each provider's free tier, on your own account. Free open models are weaker than Claude."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which free model is best for Claude Code?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It changes as providers update their lists. pocket reads each provider's live model list and picks a strong tool-calling model for you; pocket models shows the current pick."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="pocket home">pocket</a>
+    <nav aria-label="Main">
+      <a href="../#how">How it works</a>
+      <a href="../#use">Use it</a>
+      <a href="https://github.com/zerwone/pocket">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <article class="wrap guide">
+    <p class="small"><a href="../">pocket</a> › guide</p>
+    <h1>Claude Code with free models, as a fallback</h1>
+    <p class="lede">Claude Code can talk to any server that speaks the Anthropic API. pocket is that server on your own machine: it translates to Groq, NVIDIA and OpenRouter, keeps your keys in the OS keychain, and fails over between them.</p>
+
+<h2>Free keys pocket uses by default</h2>
+<table><thead><tr><th>Provider</th><th>Free per key</th></tr></thead><tbody>
+<tr><td>Groq</td><td>1,000 requests/day</td></tr>
+<tr><td>NVIDIA</td><td>~40 requests/min</td></tr>
+<tr><td>OpenRouter</td><td>50 requests/day (1,000 after a one-time $10 top-up)</td></tr>
+</tbody></table>
+<p>Also supported, off until you turn them on because of data or trial terms: Mistral, Google Gemini, Z.ai, Kilo, Cohere, Vercel AI Gateway, Cerebras (trial only). Checked against each provider's docs; the <a href="https://github.com/zerwone/pocket#how-much-free-do-you-get">README</a> has the sources and the providers left out.</p>
+<h2>Why not just set ANTHROPIC_BASE_URL to one provider?</h2>
+<p>You can. One provider means one limit, and most don't speak the Anthropic API, so tool calls break. pocket translates, retries the next key on a 429, drops models a provider retires, and names the model answering in the session.</p>
+<h2>Set it up</h2>
+<pre class="term"><span class="p">$ </span>npm i -g @zerwone/pocket
+<span class="p">$ </span>pocket</pre>
+    <h2>FAQ</h2>
+    <details><summary>Is Claude Code free with these models?</summary><p>Claude Code itself is free to install; the models answer on each provider's free tier, on your own account. Free open models are weaker than Claude.</p></details>
+    <details><summary>Which free model is best for Claude Code?</summary><p>It changes as providers update their lists. pocket reads each provider's live model list and picks a strong tool-calling model for you; pocket models shows the current pick.</p></details>
+    <h2>More guides</h2>
+    <ul>
+<li><a href="../claude-code-usage-limit/">Claude Code usage limit reached: how to keep working</a></li>
+<li><a href="../codex-usage-limit/">Codex usage limit: keep Codex working on your next key</a></li>
+<li><a href="../claude-desktop-own-api-keys/">Claude Desktop on your own API keys</a></li>
+    </ul>
+  </article>
+</main>
+<footer>
+  <div class="wrap">
+    <span>Built by Mohamad Aljadaan at <strong>ZerwOne</strong> · MIT</span>
+    <span><a href="https://github.com/zerwone/pocket">GitHub</a> · <a href="https://www.npmjs.com/package/@zerwone/pocket">npm</a></span>
+  </div>
+</footer>
+</body>
+</html>

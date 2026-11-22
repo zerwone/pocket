@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codex usage limit hit? Switch to your next API key automatically</title>
+<meta name="description" content="When Codex CLI or the Codex app hits its usage limit or a 429, pocket resends the request to your next API key (Groq, NVIDIA, OpenRouter or your own). Free.">
+<link rel="canonical" href="https://zerwone.github.io/pocket/codex-usage-limit/">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="pocket">
+<meta property="og:title" content="Codex usage limit hit? Switch to your next API key automatically">
+<meta property="og:description" content="When Codex CLI or the Codex app hits its usage limit or a 429, pocket resends the request to your next API key (Groq, NVIDIA, OpenRouter or your own). Free.">
+<meta property="og:url" content="https://zerwone.github.io/pocket/codex-usage-limit/">
+<meta property="og:image" content="https://zerwone.github.io/pocket/social.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.ico" sizes="48x48">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "Codex usage limit: keep Codex working on your next key",
+      "description": "When Codex CLI or the Codex app hits its usage limit or a 429, pocket resends the request to your next API key (Groq, NVIDIA, OpenRouter or your own). Free.",
+      "url": "https://zerwone.github.io/pocket/codex-usage-limit/",
+      "dateModified": "2026-11-22",
+      "author": {
+        "@type": "Person",
+        "name": "Mohamad Aljadaan"
+      },
+      "about": {
+        "@id": "https://zerwone.github.io/pocket/#app"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "pocket",
+          "item": "https://zerwone.github.io/pocket/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Codex usage limit: keep Codex working on your next key",
+          "item": "https://zerwone.github.io/pocket/codex-usage-limit/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What do I do when Codex says I hit my usage limit?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Wait for the reset, add an OpenAI API key, or run Codex through pocket so it moves to your next key (Groq, NVIDIA, OpenRouter or your own) when one runs out."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does pocket change my normal Codex setup?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The CLI option only adds a pocket profile, so plain codex is unchanged. The Codex app option switches all of Codex until you disconnect it, and pocket restores the file exactly."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="pocket home">pocket</a>
+    <nav aria-label="Main">
+      <a href="../#how">How it works</a>
+      <a href="../#use">Use it</a>
+      <a href="https://github.com/zerwone/pocket">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <article class="wrap guide">
+    <p class="small"><a href="../">pocket</a> › guide</p>
+    <h1>Codex usage limit: keep Codex working on your next key</h1>
+    <p class="lede">Codex stops when your ChatGPT plan or API key runs out. pocket gives Codex a list of keys instead of one, and moves to the next when a provider refuses for quota.</p>
+
+<h2>How it works with Codex</h2>
+<ul>
+<li><strong>Codex CLI:</strong> pocket adds a <code>pocket</code> profile to <code>~/.codex/config.toml</code> (with a backup). Run <code>codex-pocket</code>; plain <code>codex</code> is unchanged.</li>
+<li><strong>Codex app:</strong> one click on the setup page points the whole app at pocket. That includes <code>codex</code> in a terminal while it's on. Disconnect puts your config back byte for byte.</li>
+</ul>
+<p>pocket speaks the Responses API Codex uses, including <code>apply_patch</code> and MCP tools.</p>
+<h2>Set it up</h2>
+<pre class="term"><span class="p">$ </span>npm i -g @zerwone/pocket
+<span class="p">$ </span>pocket</pre>
+<p>Paste free keys, click Connect next to Codex CLI or Codex app.</p>
+<h2>What you give up</h2>
+<p>Fallback models are open models, weaker than OpenAI's best. Hosted tools like web search don't carry over to other providers.</p>
+    <h2>FAQ</h2>
+    <details><summary>What do I do when Codex says I hit my usage limit?</summary><p>Wait for the reset, add an OpenAI API key, or run Codex through pocket so it moves to your next key (Groq, NVIDIA, OpenRouter or your own) when one runs out.</p></details>
+    <details><summary>Does pocket change my normal Codex setup?</summary><p>The CLI option only adds a pocket profile, so plain codex is unchanged. The Codex app option switches all of Codex until you disconnect it, and pocket restores the file exactly.</p></details>
+    <h2>More guides</h2>
+    <ul>
+<li><a href="../claude-code-usage-limit/">Claude Code usage limit reached: how to keep working</a></li>
+<li><a href="../claude-code-free-models/">Claude Code with free models, as a fallback</a></li>
+<li><a href="../claude-desktop-own-api-keys/">Claude Desktop on your own API keys</a></li>
+    </ul>
+  </article>
+</main>
+<footer>
+  <div class="wrap">
+    <span>Built by Mohamad Aljadaan at <strong>ZerwOne</strong> · MIT</span>
+    <span><a href="https://github.com/zerwone/pocket">GitHub</a> · <a href="https://www.npmjs.com/package/@zerwone/pocket">npm</a></span>
+  </div>
+</footer>
+</body>
+</html>

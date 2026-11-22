@@ -1,7 +1,7 @@
 {
   "name": "@zerwone/pocket",
   "version": "0.3.0",
-  "description": "When your coding agent hits its usage limit, move it to your next API key. Local router, your own keys in the OS keychain, every switch named.",
+  "description": "Keep Claude Code and Codex working when they hit a usage limit: a local router that moves them to your next API key (Groq, NVIDIA, OpenRouter or your own).",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -37,21 +37,27 @@
   "keywords": [
     "claude-code",
     "codex",
+    "claude-desktop",
     "usage-limit",
     "rate-limit",
+    "429",
     "fallback",
+    "failover",
     "byok",
     "llm-router",
+    "ai-gateway",
+    "free-llm",
     "groq",
     "openrouter",
-    "cerebras",
     "nvidia-nim",
+    "gemini",
+    "anthropic",
+    "openai",
     "keychain",
     "coding-agents",
-    "developer-tools",
     "cli"
   ],
-  "homepage": "https://github.com/zerwone/pocket#readme",
+  "homepage": "https://zerwone.github.io/pocket/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zerwone/pocket.git"

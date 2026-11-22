@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://zerwone.github.io/pocket/</loc><lastmod>2026-11-08</lastmod></url>
+  <url><loc>https://zerwone.github.io/pocket/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://zerwone.github.io/pocket/claude-code-usage-limit/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://zerwone.github.io/pocket/codex-usage-limit/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://zerwone.github.io/pocket/claude-code-free-models/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://zerwone.github.io/pocket/claude-desktop-own-api-keys/</loc><lastmod>2026-11-22</lastmod></url>
 </urlset>

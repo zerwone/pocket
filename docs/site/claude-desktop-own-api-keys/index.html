@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Desktop with your own API keys: gateway mode via pocket</title>
+<meta name="description" content="Run Claude Desktop's chats, Cowork and Code on your own keys with its third-party gateway mode. pocket is the local gateway and fails over between keys.">
+<link rel="canonical" href="https://zerwone.github.io/pocket/claude-desktop-own-api-keys/">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="pocket">
+<meta property="og:title" content="Claude Desktop with your own API keys: gateway mode via pocket">
+<meta property="og:description" content="Run Claude Desktop's chats, Cowork and Code on your own keys with its third-party gateway mode. pocket is the local gateway and fails over between keys.">
+<meta property="og:url" content="https://zerwone.github.io/pocket/claude-desktop-own-api-keys/">
+<meta property="og:image" content="https://zerwone.github.io/pocket/social.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../favicon.ico" sizes="48x48">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "Claude Desktop on your own API keys",
+      "description": "Run Claude Desktop's chats, Cowork and Code on your own keys with its third-party gateway mode. pocket is the local gateway and fails over between keys.",
+      "url": "https://zerwone.github.io/pocket/claude-desktop-own-api-keys/",
+      "dateModified": "2026-11-22",
+      "author": {
+        "@type": "Person",
+        "name": "Mohamad Aljadaan"
+      },
+      "about": {
+        "@id": "https://zerwone.github.io/pocket/#app"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "pocket",
+          "item": "https://zerwone.github.io/pocket/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Claude Desktop on your own API keys",
+          "item": "https://zerwone.github.io/pocket/claude-desktop-own-api-keys/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can Claude Desktop use my own API key?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, through its third-party inference mode, which needs Developer Mode. Point it at a gateway such as pocket, which sends requests to your Anthropic key or free fallback keys."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does this affect my Claude subscription?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Third-party mode is separate from your Claude account; switch back with the Anthropic sign-in on the sign-in screen."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="pocket home">pocket</a>
+    <nav aria-label="Main">
+      <a href="../#how">How it works</a>
+      <a href="../#use">Use it</a>
+      <a href="https://github.com/zerwone/pocket">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <article class="wrap guide">
+    <p class="small"><a href="../">pocket</a> › guide</p>
+    <h1>Claude Desktop on your own API keys</h1>
+    <p class="lede">Claude Desktop has a third-party mode that sends inference to a gateway you choose instead of a Claude account. pocket can be that gateway, on your machine.</p>
+
+<h2>How</h2>
+<ol>
+<li>Run <code>pocket</code> and click Connect next to Claude Desktop. It gives you a file to import.</li>
+<li>In Claude Desktop, signed out: Help → Troubleshooting → Enable Developer Mode, then Developer → Configure Third-Party Inference.</li>
+<li>Import the file (or set Gateway, the URL and key pocket shows), Apply Changes, restart, and choose the third-party option.</li>
+</ol>
+<h2>Know before you switch</h2>
+<ul>
+<li>Third-party mode doesn't use your Claude account; its chats stay on your computer. Go back any time with the Anthropic sign-in.</li>
+<li>Without an Anthropic API key in pocket, answers come from free open models, which are weaker than Claude.</li>
+<li>This follows <a href="https://claude.com/docs/third-party/claude-desktop/gateway">Anthropic's gateway docs</a>; it is new in pocket 0.3.0. If the app's connection test fails, <a href="https://github.com/zerwone/pocket/issues">open an issue</a>.</li>
+</ul>
+<pre class="term"><span class="p">$ </span>npm i -g @zerwone/pocket
+<span class="p">$ </span>pocket</pre>
+    <h2>FAQ</h2>
+    <details><summary>Can Claude Desktop use my own API key?</summary><p>Yes, through its third-party inference mode, which needs Developer Mode. Point it at a gateway such as pocket, which sends requests to your Anthropic key or free fallback keys.</p></details>
+    <details><summary>Does this affect my Claude subscription?</summary><p>No. Third-party mode is separate from your Claude account; switch back with the Anthropic sign-in on the sign-in screen.</p></details>
+    <h2>More guides</h2>
+    <ul>
+<li><a href="../claude-code-usage-limit/">Claude Code usage limit reached: how to keep working</a></li>
+<li><a href="../codex-usage-limit/">Codex usage limit: keep Codex working on your next key</a></li>
+<li><a href="../claude-code-free-models/">Claude Code with free models, as a fallback</a></li>
+    </ul>
+  </article>
+</main>
+<footer>
+  <div class="wrap">
+    <span>Built by Mohamad Aljadaan at <strong>ZerwOne</strong> · MIT</span>
+    <span><a href="https://github.com/zerwone/pocket">GitHub</a> · <a href="https://www.npmjs.com/package/@zerwone/pocket">npm</a></span>
+  </div>
+</footer>
+</body>
+</html>

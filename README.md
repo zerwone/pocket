@@ -217,6 +217,9 @@ Four options: wait for the limit to reset; switch Claude Code to a paid Anthropi
 **How is pocket different from OpenRouter, LiteLLM or claude-code-fallback?**
 OpenRouter is one provider and gateway; pocket can use an OpenRouter key as one step in its order. LiteLLM is a general proxy you configure yourself. claude-code-fallback moves you from a Claude subscription to Anthropic API billing only. pocket is narrower: one `pocket setup`, keys in your OS keychain, a quota meter per key, launchers for Claude Code and Codex, and a notice in the session each time it switches.
 
+**How is pocket different from claude-code-router?**
+claude-code-router is a bigger, general gateway with routing rules, a desktop app and many providers. pocket does one job: when a key runs out, move to the next one, with keys in your OS keychain, a quota meter for each free tier, and a note in the session naming the model now answering. If you want detailed routing rules, use claude-code-router.
+
 **Which model answers after a switch?**
 The first provider in your order with quota left (by default Groq, then NVIDIA and OpenRouter), and on it the best model its live model list offers your key right now, matched to what the agent asked for. pocket reads each provider's list itself, so a retired or no-longer-free model is skipped automatically. The reply names the provider and model; `pocket models` shows what it will pick.
 

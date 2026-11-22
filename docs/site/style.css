@@ -104,3 +104,11 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: s
   .hero { padding-top: 44px; padding-bottom: 28px; }
   td:first-child { white-space: normal; }
 }
+.guide { padding-top: 28px; padding-bottom: 48px; }
+.guide h1 { font-size: 32px; line-height: 1.2; margin: 6px 0 12px; }
+.guide .lede { font-size: 18px; color: var(--muted); margin: 0 0 8px; }
+.guide h2 { margin-top: 34px; }
+.guide li { margin: 6px 0; }
+.guide .term { margin: 12px 0; }
+.guide table { margin: 10px 0; }
+@media (max-width: 600px) { .guide h1 { font-size: 26px; } }
