@@ -28,7 +28,7 @@ More:
   pocket models [--refresh]              which model each provider will use, from its live list
   pocket staked sync [--repo path]       per-agent routing from a staked roles.yml provider_policy
 
-Providers: groq cerebras nvidia openrouter mistral gemini zai anthropic openai (+ custom in providers.json)
+Providers: groq cerebras nvidia openrouter mistral gemini zai kilo cohere anthropic openai (+ custom in providers.json)
 Fallback models are weaker than the paid one. pocket says so in the session; it never hides it.
 `;
 

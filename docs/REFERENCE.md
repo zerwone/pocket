@@ -13,6 +13,8 @@ Everything the README leaves out.
 | mistral | `https://api.mistral.ai/v1` | OpenAI | 1 req/s, 500K tokens/min, 1B tokens/month; **free-plan requests may train Mistral's models**; off by default | mistral-large / medium / small |
 | gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | OpenAI | per-model free quota, published only in AI Studio; models with no free quota answer 429 `limit: 0` and pocket skips them for 24h; **free-tier prompts may be used to improve Google's products**; off by default | live list (`models/` prefix stripped) |
 | zai | `https://api.z.ai/api/paas/v4` | OpenAI | GLM-4.7-Flash and GLM-4.5-Flash free (checked 2026-11-22); no published rate limits; `free_models: "-flash$"` keeps pocket off paid GLM models; off by default | glm-4.7-flash / glm-4.7-flash / glm-4.5-flash |
+| kilo | `https://ai-gateway.kilo.ai/api/v1` | OpenAI | free models change; `free_models` keeps pocket on `:free` ids and `kilo-auto/free`; **free routes may log and train**; off by default | kilo-auto/free |
+| cohere | `https://api.cohere.ai/compatibility/v1` | OpenAI | trial key: 20 req/min, 1,000 calls/month; off by default | command-a-plus-05-2026 |
 | anthropic | `https://api.anthropic.com` | Anthropic | paid; capped by `daily_cap_usd` |
 | openai | `https://api.openai.com/v1` | OpenAI | paid; capped by `daily_cap_usd` |
 | custom | yours | either | yours |

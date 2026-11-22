@@ -141,15 +141,17 @@ Your files are the same; the conversation is not. To hand over cleanly, ask Clau
 | OpenRouter | 50 requests/day (1,000 after a one-time $10 top-up) | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
 | Cerebras | 1M tokens/day, 5 requests/min | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 
-Checked against each provider's docs on 2026-11-08. Three more are supported but off until you turn them on in setup, because of how they treat your data:
+Checked against each provider's docs on 2026-11-08. Five more are supported but off until you turn them on in setup, because of how they treat your data:
 
 | Provider | Free | Why it's off by default |
 | --- | --- | --- |
 | Mistral | 1B tokens/month | free plan requests may train Mistral's models |
 | Google Gemini | per-model quota, shown in AI Studio | free-tier prompts may be used to improve Google's products and read by reviewers (outside the EEA, Switzerland, UK) ([terms](https://ai.google.dev/gemini-api/terms)) |
 | Z.ai | GLM-4.7-Flash, GLM-4.5-Flash ([pricing](https://docs.z.ai/guides/overview/pricing.md)) | pocket hasn't verified its data terms |
+| Kilo Gateway | `:free` models and `kilo-auto/free` ([docs](https://kilo.ai/docs/code-with-ai/agents/free-and-budget-models)) | free routes may go to providers that log prompts and train on them |
+| Cohere | trial key: 20 requests/min, 1,000/month ([limits](https://docs.cohere.com/docs/rate-limits)) | trial keys are for evaluation |
 
-Not added, after checking: GitHub Models (retired July 2026), Hugging Face (no free credits for free accounts), Ollama Cloud (no free plan), SambaNova (20 requests/day), and resellers whose terms or ownership pocket can't check. pocket sends your code to these services, so it only lists ones you can look up.
+Not added, after checking: GitHub Models (retired July 2026), Hugging Face (no free credits for free accounts), Ollama Cloud (no free plan), SambaNova (20 requests/day), Cloudflare Workers AI (10,000 neurons/day is about a dozen coding turns on gpt-oss-120b), LongCat (no free quota in its current docs), OpenCode Zen (free models only work inside OpenCode), Baidu/ByteDance/iFlytek (need Chinese real-name verification), and resellers whose terms or ownership pocket can't check. pocket sends your code to these services, so it only lists ones you can look up.
 
 ## Commands
 

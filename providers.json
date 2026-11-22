@@ -1,5 +1,5 @@
 {
-  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). gemini and zai added 2026-11-22 from their docs. Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
+  "_note": "Limits verified against each provider's own docs on 2026-11-08 (NVIDIA: no official table, community-verified). gemini, zai, kilo and cohere added 2026-11-22 from their docs. Model ids verified the same day except NVIDIA's (catalog unreachable); `pocket doctor` warns after 30 days. pocket trusts live 429s over these numbers. A copy in your config dir overrides this file. price_per_mtok values are placeholders used only to enforce daily_cap_usd; set your real prices.",
   "providers": {
     "groq": {
       "label": "Groq",
@@ -131,6 +131,43 @@
         "fast": "glm-4.5-flash"
       },
       "notice": "pocket has not verified how Z.ai (Zhipu) handles data sent to its free models. Not in the default order; add it if that is acceptable."
+    },
+    "kilo": {
+      "label": "Kilo Gateway",
+      "signup": "https://app.kilo.ai",
+      "setup_note": "free models and an auto-free route; limits not published",
+      "base_url": "https://ai-gateway.kilo.ai/api/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {},
+      "verified_on": "2026-11-22",
+      "source": "Base URL and tool/stream support: https://kilo.ai/docs/gateway/api-reference. Free models and kilo-auto/free: https://kilo.ai/docs/code-with-ai/agents/free-and-budget-models. Free roster changes; pocket only uses ids ending in :free and kilo-auto/free.",
+      "free_models": ":free$|^kilo-auto/free$",
+      "tiers": {
+        "strong": "kilo-auto/free",
+        "mid": "kilo-auto/free",
+        "fast": "kilo-auto/free"
+      },
+      "notice": "Kilo's free route can send requests to providers that log prompts and outputs and use them to improve their services (Kilo's docs say not to send confidential data). Not in the default order; add it if that is acceptable."
+    },
+    "cohere": {
+      "label": "Cohere",
+      "signup": "https://dashboard.cohere.com/api-keys",
+      "setup_note": "trial key: 20 requests a minute, 1,000 a month",
+      "base_url": "https://api.cohere.ai/compatibility/v1",
+      "format": "openai",
+      "paid": false,
+      "limits": {
+        "rpm": 20
+      },
+      "verified_on": "2026-11-22",
+      "source": "Trial limits: https://docs.cohere.com/docs/rate-limits (20 req/min on chat, 1,000 calls/month). OpenAI-compatible endpoint: https://docs.cohere.com/docs/compatibility-api",
+      "tiers": {
+        "strong": "command-a-plus-05-2026",
+        "mid": "command-a-plus-05-2026",
+        "fast": "command-a-plus-05-2026"
+      },
+      "notice": "Cohere's free keys are trial keys meant for evaluation: 1,000 calls a month in total. Not in the default order; add it if that is acceptable."
     },
     "anthropic": {
       "label": "Anthropic",
